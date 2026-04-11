@@ -30,30 +30,40 @@ function Login({ onAuth }) {
 
   return (
     <div className="login-container">
-      <h2>{mode === "login" ? "Login" : "Register"}</h2>
-      <form onSubmit={handleSubmit}>
+      <h2 className="la-title">DID YOU DO IT YET?</h2>
+      <h4 className="lf-title">{mode === "login" ? "Login" : "Register"}</h4>
+      <form
+      className="log-form"
+      onSubmit={handleSubmit}>
         <input
+          id="e-input"
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+
         <input
+          id="p-input"
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Please wait..." : mode === "login" ? "Login" : "Register"}
+        <button
+          type="submit" 
+          disabled={loading}>
+            {loading ? "Please wait..." : mode === "login" ? "Login" : "Register"}
         </button>
       </form>
-      <button onClick={() => setMode(mode === "login" ? "register" : "login")}>
-        {mode === "login"
-          ? "Need an account? Register"
-          : "Already have an account? Login"}
+      <button 
+        className="reg-btn"
+        onClick={() => setMode(mode === "login" ? "register" : "login")}>
+          {mode === "login"
+            ? "Not a member? Register"
+            : "Already have an account? Login"}
       </button>
       {error && <div className="error">{error}</div>}
     </div>
