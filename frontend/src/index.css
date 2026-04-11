@@ -11,3 +11,101 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.dtitle {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+.dlog-btn {
+  margin-top: 20px;
+  margin-left: 20px;
+}
+
+.dtl-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+.dtask {
+  text-align: left;
+  margin-top: 20px;
+}
+
+.dform {
+  display: flex;
+  flex-direction: column;
+  gap: 5px; /* space between inputs */
+  align-items: flex-start; /* optional: align to left */
+}
+
+.dnt-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+.d-btn-span {
+  display: flex;
+  gap:4px; /* space between buttons */
+  margin-left: 20px;
+}
+
+.desc { 
+  padding: 0 20px;
+}
+
+.dcat-lab {
+}
+
+.task {
+  margin-left: 20px;
+}
+
+.check {
+  margin-right: 4px;
+}
+
+.la-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+  font-style: italic;
+}
+
+.lf-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+form {
+  margin-top: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px; /* space between inputs */
+  align-items: flex-start; /* optional: align to left */
+}
+
+#e-input {
+ margin: 0 5px 0 0px;
+}
+
+#p-input {
+  margin: 0 5px 0px 0px;
+}
+
+.reg-btn {
+  display: flex;
+  margin-top: 5px;
+  margin-left: 20px;
+}
+
+

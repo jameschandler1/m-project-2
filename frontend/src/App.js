@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Login from "./Login";
+import Dashboard from "./Dashboard";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -17,11 +18,7 @@ function App() {
       {!user ? (
         <Login onAuth={setUser} />
       ) : (
-        <div>
-          <h2>Welcome, {user.email}!</h2>
-          <button onClick={handleLogout}>Logout</button>
-          {/* Dashboard and logout button will go here */}
-        </div>
+        <Dashboard user={user} onLogout={handleLogout} />
       )}
     </div>
   );
