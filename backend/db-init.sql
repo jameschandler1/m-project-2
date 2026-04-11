@@ -1,0 +1,21 @@
+-- Database and tables setup for Task Tracking App
+CREATE DATABASE IF NOT EXISTS taskapp;
+USE taskapp;
+
+CREATE TABLE IF NOT EXISTS user (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  hashed_password VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  due_date DATE NOT NULL,
+  completed BOOLEAN DEFAULT 0,
+  category VARCHAR(100) NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
