@@ -1,0 +1,21 @@
+{
+  "name": "m-project-2",
+  "version": "1.0.0",
+  "description": "A lightweight to-do web app where users can manage tasks by category. Users can create, view, update, and delete tasks. Each task has a title, description, due date, and category. Includes secure user authentication and persistent task storage.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "express-mysql-session": "^3.0.3",
+    "express-session": "^1.19.0",
+    "mysql2": "^3.22.0"
+  }
+}
