@@ -26,7 +26,7 @@ app.use(
     store: sessionStore,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false for HTTP/development
       sameSite: "strict",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
