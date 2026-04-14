@@ -23,6 +23,7 @@ router.post(
         return res.status(409).json({ error: "Email already registered" });
       const userId = await User.create(email, password);
       req.session.userId = userId;
+      console.log("Registration - session userId set:", req.session.userId);
       res.json({ id: userId, email });
     } catch (e) {
       console.error("Registration error:", e);
@@ -51,8 +52,10 @@ router.post(
       const valid = await User.verifyPassword(user, password);
       if (!valid) return res.status(401).json({ error: "Invalid credentials" });
       req.session.userId = user.id;
+      console.log("Login - session userId set:", req.session.userId);
       res.json({ id: user.id, email: user.email });
     } catch (e) {
+      console.error("Login error:", e);
       res.status(500).json({ error: "Login failed" });
     }
   }
