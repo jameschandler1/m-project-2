@@ -15,14 +15,14 @@ function Dashboard({ user, onLogout }) {
   // Filter tasks based on selected filter
   const filteredTasks = tasks.filter((task) => {
     const now = new Date();
-    const dueDate = new Date(task.due_date);
+    const dueDate = new Date(task.due_date + 'T00:00:00'); // Ensure proper date parsing
     const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
     
     switch (filter) {
       case "completed":
         return task.completed;
       case "dueSoon":
-        return !task.completed && hoursUntilDue <= 24 && hoursUntilDue > 0;
+        return !task.completed && hoursUntilDue <= 24 && hoursUntilDue > -24; // Include overdue tasks within 24 hours
       case "all":
       default:
         return true;
