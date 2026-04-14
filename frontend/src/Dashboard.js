@@ -8,9 +8,26 @@ function Dashboard({ user, onLogout }) {
     title: "",
     description: "",
     due_date: "",
-    category: "",
   });
   const [editing, setEditing] = useState(null); // task id being edited
+  const [filter, setFilter] = useState("all"); // Filter state
+
+  // Filter tasks based on selected filter
+  const filteredTasks = tasks.filter((task) => {
+    const now = new Date();
+    const dueDate = new Date(task.due_date);
+    const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
+    
+    switch (filter) {
+      case "completed":
+        return task.completed;
+      case "dueSoon":
+        return !task.completed && hoursUntilDue <= 24 && hoursUntilDue > 0;
+      case "all":
+      default:
+        return true;
+    }
+  });
 
   // Fetch tasks on mount
   useEffect(() => {
@@ -45,7 +62,7 @@ function Dashboard({ user, onLogout }) {
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error("Failed to save task");
-      setForm({ title: "", description: "", due_date: "", category: "" });
+      setForm({ title: "", description: "", due_date: "" });
       setEditing(null);
       // Refresh tasks
       const updated = await fetch("/api/tasks", {
@@ -81,6 +98,28 @@ function Dashboard({ user, onLogout }) {
   return (
     <div className="dashboard-container">
       <h2 className="dtitle">Task Dashboard</h2>
+      
+      {/* Filter Buttons */}
+      <div className="filter-buttons">
+        <button 
+          className={filter === "all" ? "active" : ""}
+          onClick={() => setFilter("all")}
+        >
+          All Tasks
+        </button>
+        <button 
+          className={filter === "dueSoon" ? "active" : ""}
+          onClick={() => setFilter("dueSoon")}
+        >
+          Due Soon
+        </button>
+        <button 
+          className={filter === "completed" ? "active" : ""}
+          onClick={() => setFilter("completed")}
+        >
+          Completed
+        </button>
+      </div>
       <h3 className="dnt-title">{editing ? "Edit Task" : "Add New Task"}</h3>
       <form className="dform" onSubmit={handleSubmit}>
         <input
@@ -88,13 +127,6 @@ function Dashboard({ user, onLogout }) {
           placeholder="Title"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Category"
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
           required
         />
         <input
@@ -127,12 +159,16 @@ function Dashboard({ user, onLogout }) {
         )}
       </form>
       {error && <div className="error">{error}</div>}
-      <h3 className="dtl-title">All Tasks</h3>
+      <h3 className="dtl-title">
+        {filter === "all" && "All Tasks"}
+        {filter === "dueSoon" && "Due Soon"}
+        {filter === "completed" && "Completed"}
+      </h3>
       {loading ? (
         <div>Loading...</div>
       ) : (
         <ul>
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <li className="dtask" key={task.id}>
               <input
                 className="check"
@@ -154,7 +190,7 @@ function Dashboard({ user, onLogout }) {
                 }}
               />
               <span className="dcat-lab">
-                ({task.category}) - Due:{" "}
+                Due: {" "}
                 {task.due_date &&
                   new Date(task.due_date).toLocaleDateString("en-US")}{" "}
               </span>
