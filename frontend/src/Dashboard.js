@@ -16,7 +16,17 @@ function Dashboard({ user, onLogout }) {
   useEffect(() => {
     fetch("/api/tasks", { credentials: "include" })
       .then((res) => res.json())
-      .then(setTasks)
+      .then((data) => {
+        // Ensure we always set an array
+        if (Array.isArray(data)) {
+          setTasks(data);
+        } else if (data.error) {
+          setError(data.error);
+          setTasks([]);
+        } else {
+          setTasks([]);
+        }
+      })
       .catch(() => setError("Failed to load tasks"))
       .finally(() => setLoading(false));
   }, []);
@@ -41,7 +51,7 @@ function Dashboard({ user, onLogout }) {
       const updated = await fetch("/api/tasks", {
         credentials: "include",
       }).then((r) => r.json());
-      setTasks(updated);
+      setTasks(Array.isArray(updated) ? updated : []);
     } catch (err) {
       setError(err.message);
     }
