@@ -1,6 +1,9 @@
 const User = require("../models/user");
 
 module.exports = async function (req, res, next) {
+  console.log("Auth middleware - session data:", req.session);
+  console.log("Auth middleware - userId:", req.session.userId);
+  
   if (!req.session.userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
