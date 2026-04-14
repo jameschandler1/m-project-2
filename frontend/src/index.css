@@ -31,7 +31,7 @@ code {
 
 .dtask {
   text-align: left;
-  margin-top: 20px;
+  margin: 20px;
 }
 
 .dform {
@@ -54,15 +54,38 @@ code {
 }
 
 .desc { 
-  padding: 0 20px;
+  padding: 20px;
 }
 
 .dcat-lab {
 }
 
-.task {
-  margin-left: 20px;
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+  padding-left: 20px;
 }
+
+.filter-buttons button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.filter-buttons button:hover {
+  background: #e9ecef;
+}
+
+.filter-buttons button.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
 
 .check {
   margin-right: 4px;
