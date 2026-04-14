@@ -1,7 +1,7 @@
 const db = require("../db");
 
 const Task = {
-  async create(user_id, title, description, due_date, category) {
+  async create(user_id, title, description, due_date, category = null) {
     const [result] = await db
       .promise()
       .query(

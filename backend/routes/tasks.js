@@ -27,7 +27,6 @@ router.post(
     body("title").trim().isLength({ min: 1, max: 255 }).escape(),
     body("description").optional().trim().escape(),
     body("due_date").isISO8601().toDate(),
-    body("category").trim().isLength({ min: 1, max: 100 }).escape(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -35,13 +34,13 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, due_date, category } = req.body;
+    const { title, description, due_date } = req.body;
     const id = await Task.create(
       req.session.userId,
       title,
       description,
       due_date,
-      category,
+      null, // category is now null
     );
     res.status(201).json({ id });
   }
