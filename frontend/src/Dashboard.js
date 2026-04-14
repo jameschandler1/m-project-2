@@ -81,7 +81,6 @@ function Dashboard({ user, onLogout }) {
       title: task.title,
       description: task.description || "",
       due_date: task.due_date ? task.due_date.slice(0, 10) : "",
-      category: task.category || "",
     });
   };
 
@@ -192,7 +191,7 @@ function Dashboard({ user, onLogout }) {
               <span className="dcat-lab">
                 Due: {" "}
                 {task.due_date &&
-                  new Date(task.due_date).toLocaleDateString("en-US")}{" "}
+                  new Date(task.due_date + 'T00:00:00').toLocaleDateString("en-US")}{" "}
               </span>
               <br />
               <strong
