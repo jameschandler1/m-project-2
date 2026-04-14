@@ -53,7 +53,6 @@ router.put(
     body("title").optional().trim().isLength({ min: 1, max: 255 }).escape(),
     body("description").optional().trim().escape(),
     body("due_date").optional().isISO8601().toDate(),
-    body("category").optional().trim().isLength({ min: 1, max: 100 }).escape(),
     body("completed").optional().isBoolean(),
   ],
   async (req, res) => {
