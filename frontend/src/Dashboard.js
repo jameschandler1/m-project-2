@@ -15,7 +15,7 @@ function Dashboard({ user, onLogout }) {
   // Filter tasks based on selected filter
   const filteredTasks = tasks.filter((task) => {
     const now = new Date();
-    const dueDate = new Date(task.due_date + 'T00:00:00'); // Ensure proper date parsing
+    const dueDate = new Date(task.due_date);
     const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
     
     switch (filter) {
@@ -191,7 +191,7 @@ function Dashboard({ user, onLogout }) {
               <span className="dcat-lab">
                 Due: {" "}
                 {task.due_date &&
-                  new Date(task.due_date + 'T00:00:00').toLocaleDateString("en-US")}{" "}
+                  new Date(task.due_date).toLocaleDateString("en-US", { timeZone: 'UTC' })}{" "}
               </span>
               <br />
               <strong
