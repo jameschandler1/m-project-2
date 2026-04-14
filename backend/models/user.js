@@ -15,13 +15,13 @@ const User = {
   async findByEmail(email) {
     const [rows] = await db
       .promise()
-      .query("SELECT * FROM user WHERE email = ?", [email]);
+      .query("SELECT id, email, hashed_password FROM user WHERE email = ?", [email]);
     return rows[0];
   },
   async findById(id) {
     const [rows] = await db
       .promise()
-      .query("SELECT * FROM user WHERE id = ?", [id]);
+      .query("SELECT id, email FROM user WHERE id = ?", [id]);
     return rows[0];
   },
   async verifyPassword(user, password) {

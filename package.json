@@ -16,6 +16,7 @@
     "express": "^5.2.1",
     "express-mysql-session": "^3.0.3",
     "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
     "mysql2": "^3.22.0"
   }
 }

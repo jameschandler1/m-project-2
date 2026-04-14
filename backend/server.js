@@ -20,13 +20,14 @@ const sessionStore = new MySQLStore({}, db.promise());
 app.use(
   session({
     key: "sid",
-    secret: process.env.SESSION_SECRET || "secret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   }),
