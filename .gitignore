@@ -7,6 +7,7 @@ backend-py/env/
 backend-py/.venv/
 backend-py/venv/lib/python3.12/site-packages/
 backend-py/lib/python3.12/site-packages/
+backend-py/venv/lib
 
 # Python cache
 __pycache__/
