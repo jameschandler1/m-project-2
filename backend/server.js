@@ -7,9 +7,14 @@ const MySQLStore = require("express-mysql-session")(session);
 const db = require("./db");
 const app = express();
 
+// CORS configuration with environment variable support
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : ['http://localhost:3000'];
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://3.21.125.57:3000"],
+    origin: corsOrigins,
     credentials: true,
   }),
 );
