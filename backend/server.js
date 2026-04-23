@@ -3,8 +3,8 @@ const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
 const MySQLStore = require("express-mysql-session")(session);
-const db = require("./db");
 
+const db = require("./db");
 const app = express();
 
 app.use(
