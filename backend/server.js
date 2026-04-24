@@ -10,7 +10,7 @@ const app = express();
 // CORS configuration with environment variable support
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000'];
+  : ['http://localhost:3000','http://3.19.209.11:3000'];
 
 app.use(
   cors({
