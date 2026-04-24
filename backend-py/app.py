@@ -20,9 +20,12 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
 app = Flask(__name__)
 app.secret_key = os.getenv('SESSION_SECRET', 'dev-secret-key')
 
-# CORS configuration with environment variable support
-cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',') if os.getenv('CORS_ORIGINS') else ['http://localhost:3000']
-cors_origins = [origin.strip() for origin in cors_origins]
+cors_origins = [
+    o.strip() for o in os.getenv(
+        'CORS_ORIGINS',
+        'http://localhost:3000,http://3.19.209.11:3000'
+    ).split(',')
+]
 
 CORS(app, 
      origins=cors_origins,
