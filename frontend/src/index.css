@@ -1,101 +1,131 @@
+/**
+ * Global Stylesheet
+ * 
+ * This file contains global styles and component-specific
+ * CSS rules for the Task Tracking application.
+ * It defines typography, layout, and component styling.
+ */
+
+/* Global body styles */
 body {
-  margin: 0;
+  margin: 0; /* Remove default browser margin */
+  /* System font stack for optimal cross-platform rendering */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased; /* Smooth font rendering on WebKit */
+  -moz-osx-font-smoothing: grayscale; /* Smooth font rendering on Firefox */
 }
 
+/* Code element styling for monospace text */
 code {
+  /* Monospace font stack for code display */
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
 
+/* ===================================================== */
+/* Dashboard Component Styles */
+/* ===================================================== */
+
+/* Dashboard title */
 .dtitle {
   text-align: left;
   margin-top: 20px;
   padding-left: 20px;
 }
 
+/* Dashboard logout button */
 .dlog-btn {
   margin-top: 20px;
   margin-left: 20px;
 }
 
+/* Task list title */
 .dtl-title {
   text-align: left;
   margin-top: 20px;
   padding-left: 20px;
 }
 
+/* Individual task item */
 .dtask {
   text-align: left;
   margin: 20px;
 }
 
+/* Dashboard form (add/edit task) */
 .dform {
   display: flex;
   flex-direction: column;
-  gap: 5px; /* space between inputs */
-  align-items: flex-start; /* optional: align to left */
+  gap: 5px; /* Space between form inputs */
+  align-items: flex-start; /* Align form elements to left */
 }
 
+/* New task title */
 .dnt-title {
   text-align: left;
   margin-top: 20px;
   padding-left: 20px;
 }
 
+/* Button container for task actions */
 .d-btn-span {
   display: flex;
-  gap:4px; /* space between buttons */
+  gap: 4px; /* Space between edit/delete buttons */
   margin-left: 20px;
 }
 
+/* Task description styling */
 .desc { 
   padding: 20px;
 }
 
+/* Category label styling */
 .dcat-lab {
+  /* Currently empty but reserved for future use */
 }
 
+/* Filter buttons container */
 .filter-buttons {
   display: flex;
-  gap: 10px;
+  gap: 10px; /* Space between filter buttons */
   margin: 20px 0;
   padding-left: 20px;
 }
 
+/* Individual filter button styling */
 .filter-buttons button {
   padding: 8px 16px;
   border: 1px solid #ddd;
-  background: #f5f5f5;
+  background: #f5f5f5; /* Light gray background */
   cursor: pointer;
   border-radius: 4px;
-  transition: all 0.2s;
+  transition: all 0.2s; /* Smooth hover transition */
 }
 
+/* Filter button hover state */
 .filter-buttons button:hover {
-  background: #e9ecef;
+  background: #e9ecef; /* Darker gray on hover */
 }
 
+/* Active filter button state */
 .filter-buttons button.active {
-  background: #007bff;
+  background: #007bff; /* Blue background for active */
   color: white;
   border-color: #007bff;
 }
 
 
 .check {
-  margin-right: 4px;
+  margin-right: 4px; /* Space between checkbox and task text */
 }
 
 .la-title {
   text-align: left;
   margin-top: 20px;
   padding-left: 20px;
-  font-style: italic;
+  font-style: italic; /* Italic font style for login page title */
 }
 
 .lf-title {
@@ -110,25 +140,32 @@ form {
   padding-right: 20px;
 }
 
+/* ===================================================== */
+/* Login Component Styles */
+/* ===================================================== */
+
+/* Login container specific form styling */
 .login-container form {
   display: flex;
   flex-direction: column;
-  gap: 5px; /* space between inputs */
-  align-items: flex-start; /* optional: align to left */
+  gap: 5px; /* Space between form inputs */
+  align-items: flex-start; /* Align form elements to left */
 }
 
+/* Email input field */
 #e-input {
- margin: 0 5px 0 0px;
+  margin: 0 5px 0 0px; /* Margin for email input field */
 }
 
+/* Password input field */
 #p-input {
-  margin: 0 5px 0px 0px;
+  margin: 0 5px 0px 0px; /* Margin for password input field */
 }
 
+/* Register/login toggle button */
 .reg-btn {
   display: flex;
   margin-top: 5px;
-  margin-left: 20px;
+  margin-left: 20px; /* Margin for register/login toggle button */
 }
-
 

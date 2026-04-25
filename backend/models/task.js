@@ -76,10 +76,12 @@ const Task = {
     const setClause = keys.map((k) => `${k} = ?`).join(", ");
     
     // Add the task ID and user ID to the values array for the WHERE clause
+    // This completes the parameter chain: [field1, field2, ..., id, user_id]
     values.push(id, user_id);
     
     // Execute SQL UPDATE query to modify the task
     // The setClause dynamically sets which fields to update
+    // Parameter chain flows: fields object -> values array -> SQL query
     const [result] = await db
       .promise()
       .query(
