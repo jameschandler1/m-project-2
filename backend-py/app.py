@@ -49,7 +49,7 @@ app.secret_key = os.getenv('SESSION_SECRET', 'dev-secret-key')
 cors_origins = [
     o.strip() for o in os.getenv(
         'CORS_ORIGINS',
-        'http://localhost:3000,http://3.19.209.11:3000'
+        'http://localhost:3000,http://localhost:3001,http://52.14.51.85:3000,http://52.14.51.85:3001'
     ).split(',')
 ]
 
