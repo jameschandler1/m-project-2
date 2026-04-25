@@ -4,11 +4,17 @@ A lightweight to-do web app where users can manage tasks by category. Users can 
 
 ## Overview
 
-This project supports two backend implementations:
+This project supports multiple backend and frontend implementations:
+
+**Backends:**
 - **Node.js Backend** (original) - Express.js with MySQL
 - **Flask Backend** (Python) - Flask with MySQL (drop-in replacement)
 
-Both backends provide identical API endpoints and work seamlessly with the React frontend.
+**Frontends:**
+- **React Frontend** (original) - React with custom CSS
+- **Solid.js Frontend** - Solid.js with identical styling and functionality
+
+All backends provide identical API endpoints and work seamlessly with both frontends. Frontends are interchangeable and maintain the same appearance and functionality.
 
 ## Prerequisites
 
@@ -42,7 +48,7 @@ NODE_ENV=development
 
 ## Quick Start
 
-### Option 1: Node.js Backend (Original)
+### Option 1: Node.js Backend + React Frontend (Original)
 
 ```bash
 # Install dependencies
@@ -53,10 +59,22 @@ npm run dev
 
 # Or start individually
 npm run server  # Backend on http://localhost:4000
-npm run client  # Frontend on http://localhost:3000
+npm run client  # React frontend on http://localhost:3000
 ```
 
-### Option 2: Flask Backend (Python)
+### Option 2: Node.js Backend + Solid.js Frontend
+
+```bash
+# Start Node.js backend
+npm run server  # Backend on http://localhost:4000
+
+# In another terminal, start Solid.js frontend
+cd frontend-sld
+npm install
+npm run dev     # Solid.js frontend on http://localhost:3001
+```
+
+### Option 3: Flask Backend + React Frontend
 
 ```bash
 # Setup Flask backend
@@ -68,9 +86,27 @@ pip install -r requirements.txt
 # Start Flask backend
 python app.py  # Backend on http://localhost:4000
 
-# In another terminal, start frontend
+# In another terminal, start React frontend
 cd ../frontend
-npm start  # Frontend on http://localhost:3000
+npm start  # React frontend on http://localhost:3000
+```
+
+### Option 4: Flask Backend + Solid.js Frontend
+
+```bash
+# Setup Flask backend
+cd backend-py
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Start Flask backend
+python app.py  # Backend on http://localhost:4000
+
+# In another terminal, start Solid.js frontend
+cd ../frontend-sld
+npm install
+npm run dev     # Solid.js frontend on http://localhost:3001
 ```
 
 ## Available Scripts
@@ -81,7 +117,9 @@ npm start  # Frontend on http://localhost:3000
 npm start          # Start Node.js backend only
 npm run server     # Start Node.js backend
 npm run client     # Start React frontend
-npm run dev        # Start both Node.js backend and frontend concurrently
+npm run dev        # Start both Node.js backend and React frontend concurrently
+npm run dev-solid  # Start both Node.js backend and Solid.js frontend concurrently
+npm run solid      # Start Solid.js frontend only
 npm test           # Run tests (placeholder)
 ```
 
@@ -95,11 +133,21 @@ python app.py      # Start Flask backend on http://localhost:4000
 
 ### Frontend Commands
 
+**React Frontend:**
 ```bash
 cd frontend
 npm start          # Start React development server on http://localhost:3000
 npm build          # Build for production
 npm test           # Run tests
+```
+
+**Solid.js Frontend:**
+```bash
+cd frontend-sld
+npm install        # Install dependencies
+npm run dev        # Start Solid.js development server on http://localhost:3001
+npm run build      # Build for production
+npm run preview    # Preview production build
 ```
 
 ## Project Structure
@@ -122,6 +170,11 @@ m-project-2/
 │   ├── src/            # React source code
 │   ├── public/         # Static assets
 │   └── package.json    # Frontend dependencies
+├── frontend-sld/         # Solid.js frontend
+│   ├── src/            # Solid.js source code
+│   ├── index.html      # HTML entry point
+│   ├── vite.config.js  # Vite configuration
+│   └── package.json    # Solid.js dependencies
 ├── package.json         # Root package scripts
 └── README.md           # This file
 ```
@@ -198,10 +251,20 @@ gunicorn --bind 0.0.0.0:4000 app:app
 ```
 
 ### Frontend
+
+**React Frontend:**
 ```bash
 cd frontend
 npm run build
 # Serve the build directory with nginx or Apache
+```
+
+**Solid.js Frontend:**
+```bash
+cd frontend-sld
+npm run build
+npm run preview  # Preview production build
+# Serve the dist directory with nginx or Apache
 ```
 
 ## Troubleshooting
@@ -215,7 +278,8 @@ npm run build
 
 2. **Port Conflicts**
    - Ensure port 4000 is free for backend
-   - Ensure port 3000 is free for frontend
+   - Ensure port 3000 is free for React frontend
+   - Ensure port 3001 is free for Solid.js frontend
    - Kill processes using these ports if needed
 
 3. **Environment Variables**
