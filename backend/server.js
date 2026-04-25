@@ -10,7 +10,7 @@ const app = express();
 // CORS configuration with environment variable support
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000','http://3.19.209.11:3000'];
+  : ['http://localhost:3000','http://localhost:3001','http://3.19.209.11:3000','http://3.19.209.11:3001'];
 
 app.use(
   cors({
@@ -22,6 +22,13 @@ app.use(express.json());
 
 // Session store
 const sessionStore = new MySQLStore({}, db.promise());
+
+// Check if session secret is available
+if (!process.env.SESSION_SECRET) {
+  console.error('ERROR: SESSION_SECRET environment variable is required');
+  process.exit(1);
+}
+
 app.use(
   session({
     key: "sid",
