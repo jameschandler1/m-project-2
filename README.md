@@ -1,6 +1,6 @@
 # m-project-2
 
-A lightweight to-do web app where users can manage tasks by category. Users can create, view, update, and delete tasks. Each task has a title, description, due date, and category. Includes secure user authentication and persistent task storage.
+A lightweight to-do web app where users can manage tasks by category. Users can create, view, update, and delete tasks. Each task has a title, description, due date, and category. Includes secure user authentication and persistent task storage. Contains two frontends one is React.js and the other is Solid.js. We also Have two backends one is Node based the other is Python (flask). All frontends and Backends are interchangeable, meaning they fullfill the same contracts. Currently only one backend can run at a time, which will be updated soon.
 
 ## Overview
 
