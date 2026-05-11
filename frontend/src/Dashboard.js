@@ -39,6 +39,11 @@ function Dashboard({ user, onLogout }) {
   // UI state management
   const [editing, setEditing] = useState(null); // task id being edited
   const [filter, setFilter] = useState("all"); // Filter state
+  
+  // Media upload state
+  const [mediaFiles, setMediaFiles] = useState({}); // media files per task
+  const [uploading, setUploading] = useState(false); // upload progress
+  const [uploadError, setUploadError] = useState(""); // upload errors
 
   /**
    * Filter tasks based on selected filter mode
@@ -105,6 +110,37 @@ function Dashboard({ user, onLogout }) {
   }, []); // Empty dependency array = run once on mount
 
   /**
+   * Fetch media files for a specific task
+   */
+  const fetchMediaFiles = async (taskId) => {
+    try {
+      const response = await fetch(`/api/upload/${taskId}`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMediaFiles(prev => ({
+          ...prev,
+          [taskId]: data.media
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching media files:", error);
+    }
+  };
+
+  /**
+   * Fetch media files for all tasks on component mount and when tasks change
+   */
+  useEffect(() => {
+    if (tasks.length > 0) {
+      tasks.forEach(task => {
+        fetchMediaFiles(task.id);
+      });
+    }
+  }, [tasks]);
+
+  /**
    * Handle task creation or update
    * 
    * This function manages both creating new tasks and updating
@@ -152,6 +188,94 @@ function Dashboard({ user, onLogout }) {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  /**
+   * Handle file upload for a task
+   */
+  const handleFileUpload = async (taskId, file) => {
+    if (!file) return;
+    
+    setUploading(true);
+    setUploadError("");
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("task_id", taskId);
+      
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh media files for this task
+        await fetchMediaFiles(taskId);
+        setUploadError("");
+      } else {
+        setUploadError(data.error || "Upload failed");
+      }
+    } catch (error) {
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /**
+   * Handle media file deletion
+   */
+  const handleMediaDelete = async (mediaId, taskId) => {
+    try {
+      const response = await fetch(`/api/upload/${mediaId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh media files for this task
+        await fetchMediaFiles(taskId);
+      } else {
+        setUploadError(data.error || "Delete failed");
+      }
+    } catch (error) {
+      setUploadError("Delete failed. Please try again.");
+    }
+  };
+
+  /**
+   * Render media file (image or video)
+   */
+  const renderMediaFile = (media) => {
+    const isImage = media.file_type.startsWith("image/");
+    const isVideo = media.file_type.startsWith("video/");
+    
+    if (isImage) {
+      return (
+        <img
+          src={`/api/upload/file/${media.task_id}/${media.id}`}
+          alt={media.filename}
+          style={{ maxWidth: "200px", maxHeight: "200px", margin: "5px" }}
+        />
+      );
+    } else if (isVideo) {
+      return (
+        <video
+          controls
+          style={{ maxWidth: "200px", maxHeight: "200px", margin: "5px" }}
+        >
+          <source src={`/api/upload/file/${media.task_id}/${media.id}`} type={media.file_type} />
+          Your browser does not support the video tag.
+        </video>
+      );
+    }
+    return null;
   };
 
   /**
@@ -291,6 +415,9 @@ function Dashboard({ user, onLogout }) {
       {/* Error display */}
       {error && <div className="error">{error}</div>}
       
+      {/* Upload error display */}
+      {uploadError && <div className="error" style={{ marginTop: "10px" }}>{uploadError}</div>}
+      
       {/* Dynamic task list title based on filter */}
       <h3 className="dtl-title">
         {filter === "all" && "All Tasks"}
@@ -358,6 +485,55 @@ function Dashboard({ user, onLogout }) {
                   <br />
                 </span>
               )}
+              
+              {/* Media files display */}
+              {mediaFiles[task.id] && mediaFiles[task.id].length > 0 && (
+                <div className="media-container" style={{ margin: "10px 0" }}>
+                  <strong>Media:</strong>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                    {mediaFiles[task.id].map((media) => (
+                      <div key={media.id} style={{ position: "relative" }}>
+                        {renderMediaFile(media)}
+                        <button
+                          onClick={() => handleMediaDelete(media.id, task.id)}
+                          style={{
+                            position: "absolute",
+                            top: "5px",
+                            right: "5px",
+                            background: "red",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "20px",
+                            height: "20px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* File upload */}
+              <div className="upload-section" style={{ margin: "10px 0" }}>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      handleFileUpload(task.id, file);
+                    }
+                  }}
+                  disabled={uploading}
+                  style={{ margin: "5px 0" }}
+                />
+                {uploading && <span style={{ marginLeft: "10px" }}>Uploading...</span>}
+              </div>
               <br />
               
               {/* Action buttons */}
