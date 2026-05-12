@@ -68,3 +68,6 @@ coverage.xml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+backend-py/uploads
+backend/uploads
