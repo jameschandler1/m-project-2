@@ -69,5 +69,6 @@ coverage.xml
 ehthumbs.db
 Thumbs.db
 
-backend-py/uploads
-backend/uploads
+# Upload directories - ignore all uploaded files
+backend-py/uploads/
+backend/uploads/
