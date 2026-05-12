@@ -59,6 +59,7 @@ const sessionStore = new MySQLStore({}, db.promise());
 // Validate required environment variable
 if (!process.env.SESSION_SECRET) {
   console.error('ERROR: SESSION_SECRET environment variable is required');
+  console.error('Please set SESSION_SECRET in your environment or .env file');
   process.exit(1);
 }
 
