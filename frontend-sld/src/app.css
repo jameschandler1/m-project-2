@@ -176,6 +176,33 @@ code {
 }
 
 /* ==========================================================================
+   Media Component Styles
+   ========================================================================== */
+
+/**
+ * Media image styling for consistent sizing
+ * Ensures images maintain aspect ratio and have consistent appearance
+ */
+.media-image {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 5px;
+  object-fit: contain; /* Ensure images maintain aspect ratio */
+  border-radius: 4px; /* Optional: rounded corners */
+}
+
+/**
+ * Media video styling for consistent sizing
+ * Ensures videos have consistent dimensions and appearance
+ */
+.media-video {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 5px;
+  border-radius: 4px; /* Optional: rounded corners */
+}
+
+/* ==========================================================================
    Login Component Styles
    ========================================================================== */
 

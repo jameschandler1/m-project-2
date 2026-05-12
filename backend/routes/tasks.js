@@ -80,6 +80,8 @@ router.post(
     body("title").trim().isLength({ min: 1, max: 255 }).escape(),
     // Optional description: trim and escape if provided
     body("description").optional().trim().escape(),
+    // Optional category: trim and escape if provided
+    body("category").optional().trim().escape(),
     // Validate due_date as ISO8601 format and convert to Date object
     body("due_date").isISO8601().toDate(),
   ],
@@ -91,7 +93,7 @@ router.post(
     }
 
     // Extract validated and processed data from request body
-    const { title, description, due_date } = req.body;
+    const { title, description, due_date, category } = req.body;
     
     // Parameter chain: req.session.userId + request body -> Task.create() -> task ID
     // This creates a task associated with the authenticated user
@@ -100,7 +102,7 @@ router.post(
       title,              // Validated title
       description,         // Validated description (may be null)
       due_date,           // Validated Date object
-      null,               // Category is hardcoded to null
+      category || '',     // Use category from request or empty string
     );
     
     // Return 201 Created status with the new task ID

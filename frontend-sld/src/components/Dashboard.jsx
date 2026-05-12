@@ -34,6 +34,11 @@ function Dashboard(props) {
   });
   const [editing, setEditing] = createSignal(null);     // ID of task currently being edited
   const [filter, setFilter] = createSignal('all');      // Current filter state: 'all', 'dueSoon', or 'completed'
+  
+  // Media upload state signals
+  const [mediaFiles, setMediaFiles] = createSignal({});  // Media files per task
+  const [uploading, setUploading] = createSignal(false); // Upload progress state
+  const [uploadError, setUploadError] = createSignal(''); // Upload error messages
 
   /**
    * Filters tasks based on the currently selected filter option
@@ -100,6 +105,20 @@ function Dashboard(props) {
   });
 
   /**
+   * Fetch media files for all tasks when tasks change
+   * 
+   * @function fetchMediaEffect
+   * @returns {void}
+   */
+  createEffect(() => {
+    if (tasks().length > 0) {
+      tasks().forEach(task => {
+        fetchMediaFiles(task.id);
+      });
+    }
+  }, [tasks]);
+
+  /**
    * Handles form submission for creating or updating tasks
    * 
    * Determines whether to create a new task or update an existing one
@@ -119,21 +138,44 @@ function Dashboard(props) {
       const method = editing() ? 'PUT' : 'POST';
       const url = editing() ? `/api/tasks/${editing()}` : '/api/tasks';
       
-      // Send task data to API
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',  // Include authentication cookies
-        body: JSON.stringify(form()),  // Convert form data to JSON
-      });
+      let taskId;
       
-      if (!response.ok) throw new Error('Failed to save task');
+      if (editing()) {
+        // Update existing task (no file upload)
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',  // Include authentication cookies
+          body: JSON.stringify(form()),  // Convert form data to JSON
+        });
+        
+        if (!response.ok) throw new Error('Failed to save task');
+        taskId = editing();
+      } else {
+        // Create new task
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',  // Include authentication cookies
+          body: JSON.stringify(form()),  // Convert form data to JSON
+        });
+        
+        if (!response.ok) throw new Error('Failed to create task');
+        
+        const taskData = await response.json();
+        taskId = taskData.id;
+        
+        // Upload file if one was selected
+        if (form().file) {
+          await handleFileUpload(taskId, form().file);
+        }
+      }
       
       // Reset form state after successful submission
-      setForm({ title: '', description: '', due_date: '' });
+      setForm({ title: '', description: '', due_date: '', file: null });
       setEditing(null);  // Exit editing mode
       
-      // Refresh the entire task list to show changes
+      // Refresh entire task list to show changes
       const updatedResponse = await fetch('/api/tasks', {
         credentials: 'include',
       });
@@ -238,6 +280,138 @@ function Dashboard(props) {
     });
   };
 
+  /**
+   * Fetches media files for a specific task
+   * 
+   * @async
+   * @function fetchMediaFiles
+   * @param {number} taskId - Task ID to fetch media for
+   * @returns {Promise<void>}
+   */
+  const fetchMediaFiles = async (taskId) => {
+    try {
+      const response = await fetch(`/api/upload/${taskId}`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMediaFiles(prev => ({
+          ...prev,
+          [taskId]: data.media
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching media files:', error);
+    }
+  };
+
+  /**
+   * Handles file upload for a task
+   * 
+   * @async
+   * @function handleFileUpload
+   * @param {number} taskId - Task ID to attach media to
+   * @param {File} file - File to upload
+   * @returns {Promise<void>}
+   */
+  const handleFileUpload = async (taskId, file) => {
+    if (!file) return;
+    
+    setUploading(true);
+    setUploadError('');
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('task_id', taskId);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh media files for this task
+        await fetchMediaFiles(taskId);
+        setUploadError('');
+      } else {
+        setUploadError(data.error || 'Upload failed');
+      }
+    } catch (error) {
+      setUploadError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /**
+   * Handles media file deletion
+   * 
+   * @async
+   * @function handleMediaDelete
+   * @param {number} mediaId - Media ID to delete
+   * @param {number} taskId - Task ID the media belongs to
+   * @returns {Promise<void>}
+   */
+  const handleMediaDelete = async (mediaId, taskId) => {
+    try {
+      const response = await fetch(`/api/upload/${mediaId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh media files for this task
+        await fetchMediaFiles(taskId);
+      } else {
+        setUploadError(data.error || 'Delete failed');
+      }
+    } catch (error) {
+      setUploadError('Delete failed. Please try again.');
+    }
+  };
+
+  /**
+   * Renders media file (image or video)
+   * 
+   * @function renderMediaFile
+   * @param {Object} media - Media object
+   * @param {number} media.id - Media ID
+   * @param {string} media.file_type - File MIME type
+   * @param {string} media.filename - Original filename
+   * @returns {JSX.Element} Rendered media element
+   */
+  const renderMediaFile = (media) => {
+    const isImage = media.file_type.startsWith('image/');
+    const isVideo = media.file_type.startsWith('video/');
+    
+    if (isImage) {
+      return (
+        <img
+          className="media-image"
+          src={`/api/upload/file/${media.task_id}/${media.id}`}
+          alt={media.filename}
+        />
+      );
+    } else if (isVideo) {
+      return (
+        <video
+          className="media-video"
+          controls
+        >
+          <source src={`/api/upload/file/${media.task_id}/${media.id}`} type={media.file_type} />
+          Your browser does not support the video tag.
+        </video>
+      );
+    }
+    return null;
+  };
+
   // Render the dashboard UI with all interactive elements
   return (
     <div className="dashboard-container">
@@ -286,6 +460,31 @@ function Dashboard(props) {
           value={form().description}
           onInput={(e) => setForm({ ...form(), description: e.target.value })}
         />
+        {/* File upload for new tasks */}
+        {!editing() && (
+          <div className="file-upload-section" style={{ margin: '10px 0' }}>
+            <label htmlFor="task-file" style={{ display: 'block', marginBottom: '5px' }}>
+              Attach file (optional):
+            </label>
+            <input
+              id="task-file"
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setForm({ ...form(), file });
+                }
+              }}
+              style={{ marginBottom: '10px' }}
+            />
+            {form().file && (
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                Selected: {form().file.name} ({(form().file.size / 1024 / 1024).toFixed(2)} MB)
+              </div>
+            )}
+          </div>
+        )}
         <button type="submit">{editing() ? 'Update' : 'Add'} Task</button>
         {/* Show cancel button only when editing */}
         {editing() && (
@@ -300,6 +499,9 @@ function Dashboard(props) {
       
       {/* Error message display */}
       {error() && <div className="error">{error()}</div>}
+      
+      {/* Upload error display */}
+      {uploadError() && <div className="error" style={{ marginTop: '10px' }}>{uploadError()}</div>}
       
       {/* Dynamic task list title based on filter */}
       <h3 className="dtl-title">
@@ -345,6 +547,57 @@ function Dashboard(props) {
                   </span>
                 )}
                 <br />
+                {/* Media files display */}
+                {mediaFiles()[task.id] && mediaFiles()[task.id].length > 0 && (
+                  <div className="media-container" style={{ margin: '10px 0' }}>
+                    <strong>Media:</strong>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      <For each={mediaFiles()[task.id]}>
+                        {(media) => (
+                          <div style={{ position: 'relative' }}>
+                            {renderMediaFile(media)}
+                            <button
+                              onClick={() => handleMediaDelete(media.id, task.id)}
+                              style={{
+                                position: 'absolute',
+                                top: '5px',
+                                right: '5px',
+                                background: 'red',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '20px',
+                                height: '20px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </div>
+                )}
+                
+                {/* File upload */}
+                <div className="upload-section" style={{ margin: '10px 0' }}>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        handleFileUpload(task.id, file);
+                      }
+                    }}
+                    disabled={uploading()}
+                    style={{ margin: '5px 0' }}
+                  />
+                  {uploading() && <span style={{ marginLeft: '10px' }}>Uploading...</span>}
+                </div>
+                
                 {/* Action buttons for task management */}
                 <span className="d-btn-span">
                   <button onClick={() => handleEdit(task)}>Edit</button>

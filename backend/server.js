@@ -93,6 +93,10 @@ app.use("/api/auth", require("./routes/auth"));
 // These routes are protected by authentication middleware within the module
 app.use("/api/tasks", require("./routes/tasks"));
 
+// Media upload routes: /api/upload/*
+// These routes handle file uploads and media management
+app.use("/api/upload", require("./routes/upload"));
+
 /**
  * Health Check Endpoint
  * 

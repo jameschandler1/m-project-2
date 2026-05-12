@@ -167,17 +167,39 @@ function Dashboard({ user, onLogout }) {
       const method = editing ? "PUT" : "POST";
       const url = editing ? `/api/tasks/${editing}` : "/api/tasks";
       
-      // Parameter chain: editing state -> method/URL -> API call
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error("Failed to save task");
+      let taskId;
+      
+      if (editing) {
+        // Update existing task (no file upload)
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(form),
+        });
+        if (!res.ok) throw new Error("Failed to save task");
+        taskId = editing;
+      } else {
+        // Create new task
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(form),
+        });
+        if (!res.ok) throw new Error("Failed to create task");
+        
+        const taskData = await res.json();
+        taskId = taskData.id;
+        
+        // Upload file if one was selected
+        if (form.file) {
+          await handleFileUpload(taskId, form.file);
+        }
+      }
       
       // Reset form state after successful save
-      setForm({ title: "", description: "", due_date: "" });
+      setForm({ title: "", description: "", due_date: "", file: null });
       setEditing(null);
       
       // Refresh tasks from server to get latest data
@@ -259,16 +281,16 @@ function Dashboard({ user, onLogout }) {
     if (isImage) {
       return (
         <img
+          className="media-image"
           src={`/api/upload/file/${media.task_id}/${media.id}`}
           alt={media.filename}
-          style={{ maxWidth: "200px", maxHeight: "200px", margin: "5px" }}
         />
       );
     } else if (isVideo) {
       return (
         <video
+          className="media-video"
           controls
-          style={{ maxWidth: "200px", maxHeight: "200px", margin: "5px" }}
         >
           <source src={`/api/upload/file/${media.task_id}/${media.id}`} type={media.file_type} />
           Your browser does not support the video tag.
@@ -389,6 +411,31 @@ function Dashboard({ user, onLogout }) {
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
+        {/* File upload for new tasks */}
+        {!editing && (
+          <div className="file-upload-section" style={{ margin: '10px 0' }}>
+            <label htmlFor="task-file" style={{ display: 'block', marginBottom: '5px' }}>
+              Attach file (optional):
+            </label>
+            <input
+              id="task-file"
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setForm({ ...form, file });
+                }
+              }}
+              style={{ marginBottom: '10px' }}
+            />
+            {form.file && (
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                Selected: {form.file.name} ({(form.file.size / 1024 / 1024).toFixed(2)} MB)
+              </div>
+            )}
+          </div>
+        )}
         {/* Submit button with dynamic text */}
         <button type="submit">{editing ? "Update" : "Add"} Task</button>
         

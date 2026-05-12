@@ -26,13 +26,16 @@ Environment Variables Required:
 import os
 import re
 import json
+import time
 import bcrypt
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, current_app, send_file, redirect
 from flask_cors import CORS
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime, date
+from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 
 # Load environment variables from backend/.env
 # This allows sharing the same .env file between Node.js and Python backends
@@ -118,7 +121,7 @@ def validate_email(email):
         - ^[a-zA-Z0-9._%+-]+: Local part (alphanumeric and common symbols)
         - @: Literal @ symbol
         - [a-zA-Z0-9.-]+: Domain name
-        - \.[a-zA-Z]{2,}$: Top-level domain (2+ letters)
+        - \\.[a-zA-Z]{2,}$: Top-level domain (2+ letters)
     """
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
@@ -604,6 +607,341 @@ def delete_task(task_id):
     except Exception as e:
         print(f"Delete task error: {e}")
         return jsonify({'error': 'Failed to delete task'}), 500
+
+# =====================================================
+# Media Upload Routes
+# =====================================================
+
+@app.route('/api/upload', methods=['POST'])
+@require_auth
+def upload_file():
+    """
+    Upload a media file to a task
+    
+    Request Body (multipart/form-data):
+    - file: Media file (required)
+    - task_id: Task ID to attach media to (required)
+    
+    Response:
+    - 201: Success with media data
+    - 400: Validation error
+    - 401: Unauthorized
+    - 404: Task not found
+    - 500: Server error
+    """
+    try:
+        from models.media import Media
+        from werkzeug.utils import secure_filename
+        import os
+        import boto3
+        from flask import current_app
+        
+        # Get form data
+        task_id = request.form.get('task_id')
+        user_id = session['user_id']
+        
+        # Validate required fields
+        if not task_id:
+            return jsonify({'success': False, 'error': 'Task ID is required'}), 400
+        
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'File is required'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Validate file
+        validation = Media.validate_file(file)
+        if not validation['valid']:
+            return jsonify({'success': False, 'error': validation['error']}), 400
+        
+        # Verify task belongs to user
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
+            task_check = cursor.fetchone()
+            
+            if not task_check:
+                return jsonify({'success': False, 'error': 'Task not found or access denied'}), 404
+        finally:
+            cursor.close()
+            conn.close()
+        
+        # Generate unique filename
+        filename = secure_filename(file.filename)
+        unique_filename = Media.generate_unique_filename(user_id, filename)
+        
+        # Create uploads directory if it doesn't exist
+        upload_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save file locally
+        file_path = os.path.join(upload_dir, unique_filename)
+        file.save(file_path)
+        
+        # Get file info
+        file_size = os.path.getsize(file_path)
+        file_type = Media.get_mime_type(filename)
+        storage_type = 'local'
+        
+        # Upload to S3 if in production
+        if os.getenv('NODE_ENV') == 'production':
+            try:
+                s3 = boto3.client(
+                    's3',
+                    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+                    region_name=os.getenv('AWS_REGION')
+                )
+                
+                s3_key = f"uploads/{user_id}/{unique_filename}"
+                s3.upload_file(file_path, os.getenv('AWS_S3_BUCKET'), s3_key)
+                
+                # Get S3 URL
+                s3_url = f"https://{os.getenv('AWS_S3_BUCKET')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{s3_key}"
+                
+                # Clean up local file
+                os.remove(file_path)
+                
+                file_path = s3_url
+                storage_type = 's3'
+                
+            except Exception as s3_error:
+                print(f"S3 upload failed, using local storage: {s3_error}")
+                # Fall back to local storage
+        
+        # Create media record
+        media_id = Media.create(
+            user_id=user_id,
+            task_id=int(task_id),
+            filename=filename,
+            file_path=file_path,
+            file_type=file_type,
+            file_size=file_size,
+            storage_type=storage_type
+        )
+        
+        return jsonify({
+            'success': True,
+            'media': {
+                'id': media_id,
+                'filename': filename,
+                'file_type': file_type,
+                'file_size': file_size,
+                'storage_type': storage_type,
+                'created_at': time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            }
+        }), 201
+        
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return jsonify({'success': False, 'error': 'Failed to upload file'}), 500
+
+@app.route('/api/upload/<int:task_id>', methods=['GET'])
+@require_auth
+def get_media_files(task_id):
+    """
+    Get all media files for a specific task
+    
+    URL Parameters:
+    - task_id: Task ID
+    
+    Response:
+    - 200: Success with media array
+    - 401: Unauthorized
+    - 404: Task not found
+    - 500: Server error
+    """
+    try:
+        from models.media import Media
+        
+        user_id = session['user_id']
+        
+        # Verify task belongs to user
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
+            task_check = cursor.fetchone()
+            
+            if not task_check:
+                return jsonify({'success': False, 'error': 'Task not found or access denied'}), 404
+        finally:
+            cursor.close()
+            conn.close()
+        
+        # Get media files
+        media_files = Media.get_by_task_id(task_id, user_id)
+        
+        return jsonify({
+            'success': True,
+            'media': [{
+                'id': media['id'],
+                'task_id': media['task_id'],
+                'filename': media['filename'],
+                'file_type': media['file_type'],
+                'file_size': media['file_size'],
+                'storage_type': media['storage_type'],
+                'created_at': media['created_at'].strftime('%Y-%m-%dT%H:%M:%S.%fZ') if media['created_at'] else None
+            } for media in media_files]
+        })
+        
+    except Exception as e:
+        print(f"Get media error: {e}")
+        return jsonify({'success': False, 'error': 'Failed to retrieve media files'}), 500
+
+@app.route('/api/upload/file/<int:task_id>/<int:media_id>', methods=['GET'])
+@require_auth
+def serve_media_file(task_id, media_id):
+    """
+    Serve a media file
+    
+    URL Parameters:
+    - task_id: Task ID (for security check)
+    - media_id: Media ID
+    
+    Response:
+    - 200: File data (stream)
+    - 302: Redirect to S3 URL (if stored in S3)
+    - 401: Unauthorized
+    - 404: Media not found
+    - 500: Server error
+    """
+    try:
+        from models.media import Media
+        from flask import send_file
+        import os
+        
+        user_id = session['user_id']
+        
+        # Get media file
+        media_file = Media.get_by_id(media_id, user_id)
+        
+        if not media_file:
+            return jsonify({'success': False, 'error': 'Media not found or access denied'}), 404
+        
+        # Verify task belongs to user
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
+            task_check = cursor.fetchone()
+            
+            if not task_check:
+                return jsonify({'success': False, 'error': 'Task not found or access denied'}), 404
+        finally:
+            cursor.close()
+            conn.close()
+        
+        # Serve file based on storage type
+        if media_file['storage_type'] == 's3':
+            # Redirect to S3 URL
+            return redirect(media_file['file_path'])
+        else:
+            # Serve local file
+            if os.path.exists(media_file['file_path']):
+                # Determine MIME type
+                mime_type = media_file.get('file_type', 'application/octet-stream')
+                return send_file(
+                    media_file['file_path'],
+                    mimetype=mime_type,
+                    as_attachment=False
+                )
+            else:
+                return jsonify({'success': False, 'error': 'File not found on server'}), 404
+        
+    except Exception as e:
+        print(f"Serve file error: {e}")
+        return jsonify({'success': False, 'error': 'Failed to serve file'}), 500
+
+@app.route('/api/upload/<int:media_id>', methods=['DELETE'])
+@require_auth
+def delete_media_file(media_id):
+    """
+    Delete a media file
+    
+    URL Parameters:
+    - media_id: Media ID
+    
+    Response:
+    - 200: Success
+    - 401: Unauthorized
+    - 404: Media not found
+    - 500: Server error
+    """
+    try:
+        from models.media import Media
+        import os
+        import boto3
+        
+        user_id = session['user_id']
+        print(f"Delete request: media_id={media_id}, user_id={user_id}")
+        
+        # Get media file before deletion
+        media_file = Media.get_by_id(media_id, user_id)
+        
+        if not media_file:
+            print(f"Media file not found: media_id={media_id}")
+            return jsonify({'success': False, 'error': 'Media not found or access denied'}), 404
+        
+        # Delete from storage
+        if media_file['storage_type'] == 's3':
+            try:
+                s3 = boto3.client(
+                    's3',
+                    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+                    region_name=os.getenv('AWS_REGION')
+                )
+                
+                # Extract S3 key from file path
+                # Handle both S3 URL and local path formats
+                if 's3.amazonaws.com' in media_file['file_path']:
+                    # Extract key from S3 URL: https://bucket.s3.region.amazonaws.com/uploads/user_id/filename
+                    s3_key = '/'.join(media_file['file_path'].split('/')[-3:])  # Get uploads/user_id/filename
+                else:
+                    # Extract key from local path: uploads/user_id/filename
+                    s3_key = '/'.join(media_file['file_path'].split('/')[-3:])  # Get uploads/user_id/filename
+                
+                print(f"Attempting S3 deletion: s3_key={s3_key}")
+                s3.delete_object(
+                    Bucket=os.getenv('AWS_S3_BUCKET'),
+                    Key=s3_key
+                )
+                print(f"S3 deletion completed: success={True}")
+            except Exception as s3_error:
+                print(f"S3 deletion failed: {s3_error}")
+                # Continue with database deletion even if S3 deletion fails
+        else:
+            # Delete local file
+            if os.path.exists(media_file['file_path']):
+                print(f"Deleting local file: {media_file['file_path']}")
+                os.remove(media_file['file_path'])
+                print(f"Local file deletion completed: success={True}")
+        
+        # Delete from database
+        deleted = Media.delete(media_id, user_id)
+        print(f"Database deletion result: deleted={deleted}")
+        
+        if deleted:
+            return jsonify({'success': True, 'message': 'Media file deleted successfully'})
+        else:
+            return jsonify({'success': False, 'error': 'Media not found'}), 404
+        
+    except Exception as e:
+        print(f"Delete media exception: {type(e).__name__}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to delete media file'}), 500
 
 # =====================================================
 # Application Entry Point

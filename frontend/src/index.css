@@ -141,6 +141,27 @@ form {
 }
 
 /* ===================================================== */
+/* Media Component Styles */
+/* ===================================================== */
+
+/* Media image styling for consistent sizing */
+.media-image {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 5px;
+  object-fit: contain; /* Ensure images maintain aspect ratio */
+  border-radius: 4px; /* Optional: rounded corners */
+}
+
+/* Media video styling for consistent sizing */
+.media-video {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 5px;
+  border-radius: 4px; /* Optional: rounded corners */
+}
+
+/* ===================================================== */
 /* Login Component Styles */
 /* ===================================================== */
 
