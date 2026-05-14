@@ -32,7 +32,7 @@ const app = express();
  */
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000','http://localhost:3001','http://18.217.43.101:3000','http://18.217.43.101:3001'];
+  : ['http://localhost:3000','http://localhost:3001','https://18.217.43.101:3000','https://18.217.43.101:3001'];
 
 // Apply CORS middleware with credentials support
 // credentials: true allows cookies to be sent with cross-origin requests
@@ -46,7 +46,8 @@ app.use(
 // Stripe webhook endpoint needs raw body parsing
 app.use(
   "/api/payment/webhook",
-  express.raw({ type: "application/json" })
+  express.raw({ type: "application/json" }),
+  require("./routes/payment")
 );
 
 // Parse JSON request bodies
@@ -80,14 +81,14 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
-    rolling: true, // Reset cookie expiration on every request
+    rolling: true,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true when using HTTPS
+      secure: false, // change to true only when HTTPS is enabled
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60, // 1 hour
+      maxAge: 1000 * 60 * 60,
     },
-  }),
+  })
 );
 
 /**
