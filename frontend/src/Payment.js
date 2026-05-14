@@ -21,7 +21,9 @@ import {
 
 // Initialize Stripe with your publishable key
 // In production, this should come from environment variables
-const stripePromise = loadStripe(import.meta.env.STRIPE_PUBLISHABLE_KEY || "pk_test_your_stripe_publishable_key_here");
+const stripePromise = loadStripe(
+  process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+);
 
 /**
  * CheckoutForm Component
