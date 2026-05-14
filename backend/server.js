@@ -69,16 +69,17 @@ if (!process.env.SESSION_SECRET) {
 // Configure session middleware
 app.use(
   session({
-    key: "sid", // Cookie name for the session ID
-    secret: process.env.SESSION_SECRET, // Secret for signing session cookies
-    resave: false, // Don't save session if unmodified
-    saveUninitialized: false, // Don't create session until something stored
-    store: sessionStore, // Use MySQL store instead of default memory store
+    key: "sid",
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore,
+    rolling: true, // Reset cookie expiration on every request
     cookie: {
-      httpOnly: true, // Prevent client-side JavaScript access
-      secure: false, // Set to false for HTTP/development (true for HTTPS)
-      sameSite: "strict", // Strict CSRF protection
-      maxAge: 1000 * 60 * 60 * 24, // 1 day expiration
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true when using HTTPS
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60, // 1 hour
     },
   }),
 );
