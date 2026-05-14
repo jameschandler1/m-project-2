@@ -302,9 +302,19 @@ router.get("/file/:task_id/:media_id", auth, async (req, res) => {
     }
 
     // Serve file based on storage type
-    if (mediaFile.storage_type === 's3') {
-      // Redirect to S3 URL
-      return res.redirect(302, mediaFile.file_path);
+      if (mediaFile.storage_type === "s3") {
+      // Extract the key from the full S3 URL
+      const url = new URL(mediaFile.file_path);
+      const s3Key = decodeURIComponent(url.pathname.substring(1));
+
+      // Generate a signed URL valid for 1 hour
+      const signedUrl = s3.getSignedUrl("getObject", {
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: s3Key,
+        Expires: 60 * 60,
+      });
+
+      return res.redirect(302, signedUrl);
     } else {
       // Serve local file
       const filePath = mediaFile.file_path;
