@@ -12,7 +12,9 @@
  */
 
 // Load environment variables from .env file
-require("dotenv").config();
+require('dotenv').config({
+  path: path.join(__dirname, '.env')
+});
 const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
