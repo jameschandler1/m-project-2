@@ -69,8 +69,12 @@ router.post("/webhook", async (req, res) => {
     
     res.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
-    res.status(400).json({ error: "Webhook error" });
+    console.error("Webhook error:", error.message);
+    console.error(error.stack);
+
+    res.status(400).json({
+      error: error.message,
+    });
   }
 });
 
