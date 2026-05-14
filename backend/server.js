@@ -44,10 +44,11 @@ app.use(
 );
 
 // Stripe webhook endpoint needs raw body parsing
+// Only attach the raw body parser here.
+// Do NOT mount the payment router here.
 app.use(
   "/api/payment/webhook",
-  express.raw({ type: "application/json" }),
-  require("./routes/payment")
+  express.raw({ type: "application/json" })
 );
 
 // Parse JSON request bodies
@@ -112,6 +113,7 @@ app.use("/api/upload", require("./routes/upload"));
 // Payment routes: /api/payment/*
 // These routes handle Stripe payment integration
 app.use("/api/payment", require("./routes/payment"));
+
 
 /**
  * Health Check Endpoint
