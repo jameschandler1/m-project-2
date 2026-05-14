@@ -25,7 +25,7 @@ const router = express.Router();
  * - payment_intent.succeeded: Update user to paid status
  * - payment_intent.payment_failed: Log payment failure
  */
-router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+router.post("/webhook", async (req, res) => {
   const sig = req.headers["stripe-signature"];
   
   try {
