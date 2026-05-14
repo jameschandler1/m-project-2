@@ -33,6 +33,24 @@ function App() {
   // State to control whether to show payment page
   const [showPayment, setShowPayment] = useState(false);
 
+   useEffect(() => {
+  fetch("/api/auth/me", {
+    credentials: "include",
+  })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Not authenticated");
+      }
+      return res.json();
+    })
+    .then((userData) => {
+      setUser(userData);
+    })
+    .catch(() => {
+      setUser(null);
+    });
+}, []); 
+
   const refreshPaymentStatus = () => {
   fetch("/api/payment/status", {
     credentials: "include",
@@ -58,23 +76,7 @@ function App() {
     });
 };
 
-  useEffect(() => {
-  fetch("/api/auth/me", {
-    credentials: "include",
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Not authenticated");
-      }
-      return res.json();
-    })
-    .then((userData) => {
-      setUser(userData);
-    })
-    .catch(() => {
-      setUser(null);
-    });
-}, []); 
+ 
 
   /**
    * Fetch payment status when user changes
