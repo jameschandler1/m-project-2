@@ -79,25 +79,6 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
     }
   });
 
-  /**
-   * Fetch payment status on component mount
-   */
-  useEffect(() => {
-    fetch("/api/payment/status", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        setPaymentStatus(data);
-      })
-      .catch(() => {
-        // If payment status fetch fails, assume free tier
-        setPaymentStatus({
-          paymentStatus: 'free',
-          tasksCreated: 0,
-          freeTasksRemaining: 3,
-          isPaywalled: false,
-        });
-      });
-  }, []);
 
   /**
    * Fetch tasks from API on component mount
