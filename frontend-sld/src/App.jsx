@@ -7,9 +7,10 @@
  * @author Generated
  * @since 1.0.0
  */
-import { createSignal, onMount } from 'solid-js';
+import { createSignal, onMount, createEffect } from 'solid-js';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import Payment from './components/Payment';
 
 /**
  * Main App component - Application root
@@ -23,6 +24,43 @@ import Dashboard from './components/Dashboard';
 function App() {
   // Global user authentication state
   const [user, setUser] = createSignal(null);  // null = not logged in, object = logged in user data
+  
+  // Payment status state
+  const [paymentStatus, setPaymentStatus] = createSignal({
+    paymentStatus: 'free',
+    tasksCreated: 0,
+    freeTasksRemaining: 3,
+    isPaywalled: false,
+  });
+  
+  // State to control whether to show payment page
+  const [showPayment, setShowPayment] = createSignal(false);
+
+  /**
+   * Fetch payment status when user changes
+   */
+  createEffect(() => {
+    if (user()) {
+      fetch('/api/payment/status', { credentials: 'include' })
+        .then((res) => res.json())
+        .then((data) => {
+          setPaymentStatus(data);
+          // Show payment page if user is paywalled
+          if (data.isPaywalled) {
+            setShowPayment(true);
+          }
+        })
+        .catch(() => {
+          // If payment status fetch fails, assume free tier
+          setPaymentStatus({
+            paymentStatus: 'free',
+            tasksCreated: 0,
+            freeTasksRemaining: 3,
+            isPaywalled: false,
+          });
+        });
+    }
+  });
 
   /**
    * Handles user logout by calling the logout API endpoint
@@ -42,6 +80,38 @@ function App() {
     });
     // Clear local user state to trigger re-render to login view
     setUser(null);
+    setShowPayment(false);
+  };
+
+  /**
+   * Handle payment success
+   * 
+   * This function is called when payment succeeds.
+   * It refreshes the payment status and hides the payment page.
+   */
+  const handlePaymentSuccess = () => {
+    // Refresh payment status
+    fetch('/api/payment/status', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        setPaymentStatus(data);
+        setShowPayment(false);
+      })
+      .catch(() => {
+        // If refresh fails, just hide payment page
+        setShowPayment(false);
+      });
+  };
+
+  /**
+   * Handle payment failure
+   * 
+   * This function is called when payment fails.
+   * It keeps the payment page visible so the user can try again.
+   */
+  const handlePaymentFailure = (errorMessage) => {
+    console.error('Payment failed:', errorMessage);
+    // Keep payment page visible for retry
   };
 
   /**
@@ -63,12 +133,19 @@ function App() {
   // Render application with conditional routing based on authentication state
   return (
     <div className="App">
-      {/* Conditional rendering: show Login if no user, Dashboard if user exists */}
+      {/* Conditional rendering: show Login if no user, Payment if paywalled, Dashboard otherwise */}
       {!user() ? (
         // User not authenticated - show login form
         <Login onAuth={handleAuth} />
+      ) : showPayment() ? (
+        // User authenticated but paywalled - show payment page
+        <Payment 
+          onPaymentSuccess={handlePaymentSuccess}
+          onPaymentFailure={handlePaymentFailure}
+          onLogout={handleLogout}
+        />
       ) : (
-        // User authenticated - show dashboard with user data and logout handler
+        // User authenticated and not paywalled - show dashboard
         <Dashboard user={user()} onLogout={handleLogout} />
       )}
     </div>

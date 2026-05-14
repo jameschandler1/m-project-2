@@ -247,7 +247,7 @@ pm2 start backend/server.js --name "taskapp-backend"
 cd backend-py
 source venv/bin/activate
 pip install gunicorn
-gunicorn --bind 0.0.0.0:4000 app:app
+gunicorn --bind 0.0.0.0:4000 --timeout 300 app:app
 ```
 
 ### Frontend

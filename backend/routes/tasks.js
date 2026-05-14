@@ -16,6 +16,7 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const Task = require("../models/task");
 const auth = require("../middleware/auth");
+const db = require("../db");
 const router = express.Router();
 
 // Apply authentication middleware to all routes in this router
@@ -92,6 +93,24 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Check user's payment status and task count
+    const [userRows] = await db
+      .promise()
+      .query(
+        "SELECT payment_status, tasks_created FROM user WHERE id = ?",
+        [req.session.userId]
+      );
+    
+    const user = userRows[0];
+    
+    // Enforce paywall: block task creation if free user has created 3+ tasks
+    if (user.payment_status === 'free' && user.tasks_created >= 3) {
+      return res.status(403).json({ 
+        error: "Free tier limit reached. Please upgrade to continue creating tasks.",
+        paymentRequired: true 
+      });
+    }
+
     // Extract validated and processed data from request body
     const { title, description, due_date, category } = req.body;
     
@@ -104,6 +123,14 @@ router.post(
       due_date,           // Validated Date object
       category || '',     // Use category from request or empty string
     );
+    
+    // Increment task count for the user
+    await db
+      .promise()
+      .query(
+        "UPDATE user SET tasks_created = tasks_created + 1 WHERE id = ?",
+        [req.session.userId]
+      );
     
     // Return 201 Created status with the new task ID
     res.status(201).json({ id });

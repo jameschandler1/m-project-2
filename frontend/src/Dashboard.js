@@ -44,6 +44,14 @@ function Dashboard({ user, onLogout }) {
   const [mediaFiles, setMediaFiles] = useState({}); // media files per task
   const [uploading, setUploading] = useState(false); // upload progress
   const [uploadError, setUploadError] = useState(""); // upload errors
+  
+  // Payment status state
+  const [paymentStatus, setPaymentStatus] = useState({
+    paymentStatus: 'free',
+    tasksCreated: 0,
+    freeTasksRemaining: 3,
+    isPaywalled: false,
+  });
 
   /**
    * Filter tasks based on selected filter mode
@@ -77,6 +85,26 @@ function Dashboard({ user, onLogout }) {
         return true;
     }
   });
+
+  /**
+   * Fetch payment status on component mount
+   */
+  useEffect(() => {
+    fetch("/api/payment/status", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setPaymentStatus(data);
+      })
+      .catch(() => {
+        // If payment status fetch fails, assume free tier
+        setPaymentStatus({
+          paymentStatus: 'free',
+          tasksCreated: 0,
+          freeTasksRemaining: 3,
+          isPaywalled: false,
+        });
+      });
+  }, []);
 
   /**
    * Fetch tasks from API on component mount
@@ -365,6 +393,24 @@ function Dashboard({ user, onLogout }) {
       {/* Dashboard title */}
       <h2 className="dtitle">Task Dashboard</h2>
       
+      {/* Payment status display */}
+      <div className="payment-status-bar">
+        {paymentStatus.paymentStatus === 'paid' ? (
+          <span className="payment-status-paid">✓ Premium Account - Unlimited Tasks</span>
+        ) : (
+          <span className="payment-status-free">
+            Free Tasks Remaining: {paymentStatus.freeTasksRemaining} / 3
+          </span>
+        )}
+      </div>
+      
+      {/* Paywall warning */}
+      {paymentStatus.isPaywalled && (
+        <div className="paywall-warning">
+          ⚠️ You've reached your free task limit. Upgrade to continue creating tasks.
+        </div>
+      )}
+      
       {/* Filter buttons section */}
       <div className="filter-buttons">
         <button 
@@ -389,75 +435,81 @@ function Dashboard({ user, onLogout }) {
       
       {/* Task form section */}
       <h3 className="dnt-title">{editing ? "Edit Task" : "Add New Task"}</h3>
-      <form className="dform" onSubmit={handleSubmit}>
-        {/* Title input */}
-        <input
-          type="text"
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-        {/* Due date input */}
-        <input
-          type="date"
-          value={form.due_date}
-          onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-          required
-        />
-        {/* Description textarea */}
-        <textarea
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-        {/* File upload for new tasks */}
-        {!editing && (
-          <div className="file-upload-section" style={{ margin: '10px 0' }}>
-            <label htmlFor="task-file" style={{ display: 'block', marginBottom: '5px' }}>
-              Attach file (optional):
-            </label>
-            <input
-              id="task-file"
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  setForm({ ...form, file });
-                }
+      {!paymentStatus.isPaywalled || editing ? (
+        <form className="dform" onSubmit={handleSubmit}>
+          {/* Title input */}
+          <input
+            type="text"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            required
+          />
+          {/* Due date input */}
+          <input
+            type="date"
+            value={form.due_date}
+            onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+            required
+          />
+          {/* Description textarea */}
+          <textarea
+            placeholder="Description"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          {/* File upload for new tasks */}
+          {!editing && (
+            <div className="file-upload-section" style={{ margin: '10px 0' }}>
+              <label htmlFor="task-file" style={{ display: 'block', marginBottom: '5px' }}>
+                Attach file (optional):
+              </label>
+              <input
+                id="task-file"
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setForm({ ...form, file });
+                  }
+                }}
+                style={{ marginBottom: '10px' }}
+              />
+              {form.file && (
+                <div style={{ fontSize: '14px', color: '#666' }}>
+                  Selected: {form.file.name} ({(form.file.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              )}
+            </div>
+          )}
+          {/* Submit button with dynamic text */}
+          <button type="submit">{editing ? "Update" : "Add"} Task</button>
+          
+          {/* Cancel button - only shows when editing */}
+          {editing && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                // Reset form to empty state
+                setForm({
+                  title: "",
+                  description: "",
+                  due_date: "",
+                  category: "",
+                });
               }}
-              style={{ marginBottom: '10px' }}
-            />
-            {form.file && (
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                Selected: {form.file.name} ({(form.file.size / 1024 / 1024).toFixed(2)} MB)
-              </div>
-            )}
-          </div>
-        )}
-        {/* Submit button with dynamic text */}
-        <button type="submit">{editing ? "Update" : "Add"} Task</button>
-        
-        {/* Cancel button - only shows when editing */}
-        {editing && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              // Reset form to empty state
-              setForm({
-                title: "",
-                description: "",
-                due_date: "",
-                category: "",
-              });
-            }}
-          >
-            Cancel
-          </button>
-        )}
-      </form>
+            >
+              Cancel
+            </button>
+          )}
+        </form>
+      ) : (
+        <div className="paywall-message">
+          <p>Task creation is disabled. Please upgrade your account to continue.</p>
+        </div>
+      )}
       
       {/* Error display */}
       {error && <div className="error">{error}</div>}

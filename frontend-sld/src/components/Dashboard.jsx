@@ -39,6 +39,14 @@ function Dashboard(props) {
   const [mediaFiles, setMediaFiles] = createSignal({});  // Media files per task
   const [uploading, setUploading] = createSignal(false); // Upload progress state
   const [uploadError, setUploadError] = createSignal(''); // Upload error messages
+  
+  // Payment status state
+  const [paymentStatus, setPaymentStatus] = createSignal({
+    paymentStatus: 'free',
+    tasksCreated: 0,
+    freeTasksRemaining: 3,
+    isPaywalled: false,
+  });
 
   /**
    * Filters tasks based on the currently selected filter option
@@ -72,16 +80,25 @@ function Dashboard(props) {
   };
 
   /**
-   * Fetches tasks from the API when component mounts
-   * 
-   * Uses SolidJS onMount lifecycle hook to fetch initial data.
-   * Handles various response formats and sets appropriate error states.
-   * 
-   * @async
-     * @function onMountEffect
-     * @returns {Promise<void>}
+   * Fetches payment status and tasks when component mounts
    */
   onMount(async () => {
+    // Fetch payment status
+    try {
+      const response = await fetch('/api/payment/status', { credentials: 'include' });
+      const data = await response.json();
+      setPaymentStatus(data);
+    } catch (err) {
+      // If payment status fetch fails, assume free tier
+      setPaymentStatus({
+        paymentStatus: 'free',
+        tasksCreated: 0,
+        freeTasksRemaining: 3,
+        isPaywalled: false,
+      });
+    }
+
+    // Fetch tasks
     try {
       // Fetch tasks with credentials for authentication
       const response = await fetch('/api/tasks', { credentials: 'include' });
@@ -160,7 +177,13 @@ function Dashboard(props) {
           body: JSON.stringify(form()),  // Convert form data to JSON
         });
         
-        if (!response.ok) throw new Error('Failed to create task');
+        if (!response.ok) {
+          const errorData = await response.json();
+          if (errorData.paymentRequired) {
+            throw new Error('Free tier limit reached. Please upgrade to continue creating tasks.');
+          }
+          throw new Error('Failed to create task');
+        }
         
         const taskData = await response.json();
         taskId = taskData.id;
@@ -174,6 +197,11 @@ function Dashboard(props) {
       // Reset form state after successful submission
       setForm({ title: '', description: '', due_date: '', file: null });
       setEditing(null);  // Exit editing mode
+      
+      // Refresh payment status after task creation
+      const paymentResponse = await fetch('/api/payment/status', { credentials: 'include' });
+      const paymentData = await paymentResponse.json();
+      setPaymentStatus(paymentData);
       
       // Refresh entire task list to show changes
       const updatedResponse = await fetch('/api/tasks', {
@@ -417,6 +445,24 @@ function Dashboard(props) {
     <div className="dashboard-container">
       <h2 className="dtitle">Task Dashboard</h2>
       
+      {/* Payment status display */}
+      <div className="payment-status-bar">
+        {paymentStatus().paymentStatus === 'paid' ? (
+          <span className="payment-status-paid">✓ Premium Account - Unlimited Tasks</span>
+        ) : (
+          <span className="payment-status-free">
+            Free Tasks Remaining: {paymentStatus().freeTasksRemaining} / 3
+          </span>
+        )}
+      </div>
+      
+      {/* Paywall warning */}
+      {paymentStatus().isPaywalled && (
+        <div className="paywall-warning">
+          ⚠️ You've reached your free task limit. Upgrade to continue creating tasks.
+        </div>
+      )}
+      
       {/* Filter buttons for task viewing */}
       <div className="filter-buttons">
         <button 
@@ -441,7 +487,8 @@ function Dashboard(props) {
       
       {/* Task creation/editing form */}
       <h3 className="dnt-title">{editing() ? 'Edit Task' : 'Add New Task'}</h3>
-      <form className="dform" onSubmit={handleSubmit}>
+      {!paymentStatus().isPaywalled || editing() ? (
+        <form className="dform" onSubmit={handleSubmit}>
         <input
           type="text"
           placeholder="Title"
@@ -496,6 +543,11 @@ function Dashboard(props) {
           </button>
         )}
       </form>
+      ) : (
+        <div className="paywall-message">
+          <p>Task creation is disabled. Please upgrade your account to continue.</p>
+        </div>
+      )}
       
       {/* Error message display */}
       {error() && <div className="error">{error()}</div>}

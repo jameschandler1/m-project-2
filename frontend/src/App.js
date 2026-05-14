@@ -12,14 +12,52 @@
  * 4. handleLogout clears user session and state
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
+import Payment from "./Payment";
 
 function App() {
   // State management for user authentication
   // user: null (not logged in) or user object (logged in)
   const [user, setUser] = useState(null);
+  
+  // Payment status state
+  const [paymentStatus, setPaymentStatus] = useState({
+    paymentStatus: 'free',
+    tasksCreated: 0,
+    freeTasksRemaining: 3,
+    isPaywalled: false,
+  });
+  
+  // State to control whether to show payment page
+  const [showPayment, setShowPayment] = useState(false);
+
+  /**
+   * Fetch payment status when user changes
+   */
+  useEffect(() => {
+    if (user) {
+      fetch("/api/payment/status", { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => {
+          setPaymentStatus(data);
+          // Show payment page if user is paywalled
+          if (data.isPaywalled) {
+            setShowPayment(true);
+          }
+        })
+        .catch(() => {
+          // If payment status fetch fails, assume free tier
+          setPaymentStatus({
+            paymentStatus: 'free',
+            tasksCreated: 0,
+            freeTasksRemaining: 3,
+            isPaywalled: false,
+          });
+        });
+    }
+  }, [user]);
 
   /**
    * Handle user logout
@@ -39,6 +77,38 @@ function App() {
     });
     // Clear user state to trigger Login component render
     setUser(null);
+    setShowPayment(false);
+  };
+
+  /**
+   * Handle payment success
+   * 
+   * This function is called when payment succeeds.
+   * It refreshes the payment status and hides the payment page.
+   */
+  const handlePaymentSuccess = () => {
+    // Refresh payment status
+    fetch("/api/payment/status", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setPaymentStatus(data);
+        setShowPayment(false);
+      })
+      .catch(() => {
+        // If refresh fails, just hide payment page
+        setShowPayment(false);
+      });
+  };
+
+  /**
+   * Handle payment failure
+   * 
+   * This function is called when payment fails.
+   * It keeps the payment page visible so the user can try again.
+   */
+  const handlePaymentFailure = (errorMessage) => {
+    console.error("Payment failed:", errorMessage);
+    // Keep payment page visible for retry
   };
 
   /**
@@ -46,15 +116,23 @@ function App() {
    * 
    * Conditional rendering flow:
    * - If user is null: Show Login component
-   * - If user exists: Show Dashboard component with user data and logout handler
+   * - If user exists and paywalled: Show Payment component
+   * - If user exists and not paywalled: Show Dashboard component
    */
   return (
     <div className="App">
       {!user ? (
         // User not authenticated - show login form
         <Login onAuth={setUser} />
+      ) : showPayment ? (
+        // User authenticated but paywalled - show payment page
+        <Payment 
+          onPaymentSuccess={handlePaymentSuccess}
+          onPaymentFailure={handlePaymentFailure}
+          onLogout={handleLogout}
+        />
       ) : (
-        // User authenticated - show dashboard with user data and logout capability
+        // User authenticated and not paywalled - show dashboard
         <Dashboard user={user} onLogout={handleLogout} />
       )}
     </div>

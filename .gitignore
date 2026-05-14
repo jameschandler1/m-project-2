@@ -72,3 +72,8 @@ Thumbs.db
 # Upload directories - ignore all uploaded files
 backend-py/uploads/
 backend/uploads/
+
+#misc
+.env
+.env.local 
+backend/.env/

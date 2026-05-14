@@ -29,7 +29,7 @@ const app = express();
  */
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000','http://localhost:3001','http://13.59.143.7:3000','http://13.59.143.7:3001'];
+  : ['http://localhost:3000','http://localhost:3001','http://3.137.144.78:3000','http://3.137.144.78:3001'];
 
 // Apply CORS middleware with credentials support
 // credentials: true allows cookies to be sent with cross-origin requests
@@ -97,6 +97,10 @@ app.use("/api/tasks", require("./routes/tasks"));
 // Media upload routes: /api/upload/*
 // These routes handle file uploads and media management
 app.use("/api/upload", require("./routes/upload"));
+
+// Payment routes: /api/payment/*
+// These routes handle Stripe payment integration
+app.use("/api/payment", require("./routes/payment"));
 
 /**
  * Health Check Endpoint
