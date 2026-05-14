@@ -115,18 +115,24 @@ function App() {
    * It refreshes the payment status and hides the payment page.
    */
   const handlePaymentSuccess = () => {
-    // Refresh payment status
-    fetch("/api/payment/status", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        setPaymentStatus(data);
+  fetch("/api/payment/status", {
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setPaymentStatus(data);
+
+      // Only hide payment screen if user is truly paid
+      if (!data.isPaywalled) {
         setShowPayment(false);
-      })
-      .catch(() => {
-        // If refresh fails, just hide payment page
-        setShowPayment(false);
-      });
-  };
+      } else {
+        setShowPayment(true);
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to refresh payment status:", err);
+    });
+};
 
   /**
    * Handle payment failure

@@ -103,19 +103,31 @@ function App() {
    * This function is called when payment succeeds.
    * It refreshes the payment status and hides the payment page.
    */
-  const handlePaymentSuccess = () => {
-    // Refresh payment status
-    fetch('/api/payment/status', { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => {
-        setPaymentStatus(data);
-        setShowPayment(false);
-      })
-      .catch(() => {
-        // If refresh fails, just hide payment page
-        setShowPayment(false);
-      });
-  };
+  const handlePaymentSuccess = async () => {
+  try {
+    const res = await fetch("/api/payment/status", {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch payment status");
+    }
+
+    const data = await res.json();
+
+    setPaymentStatus(data);
+
+    // Only close the payment screen if the backend confirms
+    // the user is no longer paywalled.
+    if (!data.isPaywalled) {
+      setShowPayment(false);
+    } else {
+      setShowPayment(true);
+    }
+  } catch (err) {
+    console.error("Failed to refresh payment status:", err);
+  }
+};
 
   /**
    * Handle payment failure
