@@ -43,9 +43,11 @@ app.use(
   }),
 );
 
-
 // Stripe webhook endpoint needs raw body parsing
-app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
+app.use(
+  "/api/payment/webhook",
+  express.raw({ type: "application/json" })
+);
 
 // Parse JSON request bodies
 // This middleware parses incoming JSON payloads and makes them available in req.body
