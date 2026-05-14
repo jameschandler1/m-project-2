@@ -448,7 +448,9 @@ function Dashboard(props) {
       {/* Payment status display */}
       <div className="payment-status-bar">
         {paymentStatus().paymentStatus === 'paid' ? (
-          <span className="payment-status-paid">✓ Premium Account - Unlimited Tasks</span>
+          <span className="payment-status-paid">
+            ✓ Premium Account - Unlimited Tasks
+          </span>
         ) : (
           <span className="payment-status-free">
             Free Tasks Remaining: {paymentStatus().freeTasksRemaining} / 3

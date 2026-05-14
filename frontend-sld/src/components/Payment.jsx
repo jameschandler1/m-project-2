@@ -113,12 +113,15 @@ function Payment(props) {
         redirect: 'if_required',
       });
       
-      if (submitError) {
-        setCardError(submitError.message);
-        if (props.onPaymentFailure) props.onPaymentFailure(submitError.message);
+    if (submitError) {
+  setCardError(submitError.message);
+        if (props.onPaymentFailure) {
+          props.onPaymentFailure(submitError.message);
+        }
       } else {
+        // Show success screen first.
+        // Wait for user to click Continue.
         setSucceeded(true);
-        if (props.onPaymentSuccess) props.onPaymentSuccess();
       }
     } catch (err) {
       setCardError('Payment failed. Please try again.');
@@ -158,11 +161,18 @@ function Payment(props) {
         
         {cardError() && <div className="payment-error">{cardError()}</div>}
         
-        {succeeded() ? (
-          <div className="payment-success">
-            Payment successful! You can now create unlimited tasks.
-          </div>
-        ) : (
+       {succeeded() ? (
+  <div className="payment-success">
+      <p>Payment successful! Your account has been upgraded.</p>
+      <button
+        type="button"
+        onClick={props.onPaymentSuccess}
+        className="payment-submit-button"
+      >
+        Continue to Dashboard
+      </button>
+    </div>
+  ) : (
           <button
             type="submit"
             disabled={processing()}

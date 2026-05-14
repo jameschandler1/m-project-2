@@ -36,31 +36,45 @@ function App() {
   // State to control whether to show payment page
   const [showPayment, setShowPayment] = createSignal(false);
 
+  onMount(async () => {
+  try {
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error('Not authenticated');
+
+    const userData = await response.json();
+    setUser(userData);
+  } catch {
+    setUser(null);
+  }
+});
+
   /**
    * Fetch payment status when user changes
    */
-  createEffect(() => {
-    if (user()) {
-      fetch('/api/payment/status', { credentials: 'include' })
-        .then((res) => res.json())
-        .then((data) => {
-          setPaymentStatus(data);
-          // Show payment page if user is paywalled
-          if (data.isPaywalled) {
-            setShowPayment(true);
-          }
-        })
-        .catch(() => {
-          // If payment status fetch fails, assume free tier
-          setPaymentStatus({
-            paymentStatus: 'free',
-            tasksCreated: 0,
-            freeTasksRemaining: 3,
-            isPaywalled: false,
-          });
-        });
-    }
-  });
+  createEffect(async () => {
+  const currentUser = user();
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch('/api/payment/status', {
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    setPaymentStatus(data);
+    setShowPayment(data.isPaywalled);
+  } catch {
+    setPaymentStatus({
+      paymentStatus: 'free',
+      tasksCreated: 0,
+      freeTasksRemaining: 3,
+      isPaywalled: false,
+    });
+  }
+});
 
   /**
    * Handles user logout by calling the logout API endpoint
