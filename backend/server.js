@@ -32,7 +32,7 @@ const app = express();
  */
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000','http://localhost:3001','https://18.188.203.200:3000','https://18.188.203.200:3001'];
+  : ['http://localhost:3000','http://localhost:3001','https://18.119.176.95:3000','https://18.119.176.95:3001'];
 
 // Apply CORS middleware with credentials support
 // credentials: true allows cookies to be sent with cross-origin requests
