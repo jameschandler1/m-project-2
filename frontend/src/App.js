@@ -33,6 +33,31 @@ function App() {
   // State to control whether to show payment page
   const [showPayment, setShowPayment] = useState(false);
 
+  const refreshPaymentStatus = () => {
+  fetch("/api/payment/status", {
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setPaymentStatus(data);
+
+      if (data.isPaywalled) {
+        setShowPayment(true);
+      } else {
+        setShowPayment(false);
+      }
+    })
+    .catch(() => {
+      setPaymentStatus({
+        paymentStatus: "free",
+        tasksCreated: 0,
+        freeTasksRemaining: 3,
+        isPaywalled: false,
+      });
+      setShowPayment(false);
+    });
+};
+
   useEffect(() => {
   fetch("/api/auth/me", {
     credentials: "include",
@@ -55,27 +80,10 @@ function App() {
    * Fetch payment status when user changes
    */
   useEffect(() => {
-    if (user) {
-      fetch("/api/payment/status", { credentials: "include" })
-        .then((res) => res.json())
-        .then((data) => {
-          setPaymentStatus(data);
-          // Show payment page if user is paywalled
-          if (data.isPaywalled) {
-            setShowPayment(true);
-          }
-        })
-        .catch(() => {
-          // If payment status fetch fails, assume free tier
-          setPaymentStatus({
-            paymentStatus: 'free',
-            tasksCreated: 0,
-            freeTasksRemaining: 3,
-            isPaywalled: false,
-          });
-        });
-    }
-  }, [user]);
+  if (user) {
+    refreshPaymentStatus();
+  }
+}, [user]);
 
   /**
    * Handle user logout
@@ -151,7 +159,12 @@ function App() {
         />
       ) : (
         // User authenticated and not paywalled - show dashboard
-        <Dashboard user={user} onLogout={handleLogout} />
+        <Dashboard
+  user={user}
+  onLogout={handleLogout}
+  paymentStatus={paymentStatus}
+  onTaskCreated={refreshPaymentStatus}
+/>
       )}
     </div>
   );

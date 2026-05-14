@@ -23,7 +23,7 @@
 
 import React, { useEffect, useState } from "react";
 
-function Dashboard({ user, onLogout }) {
+function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   // Task list state
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +45,6 @@ function Dashboard({ user, onLogout }) {
   const [uploading, setUploading] = useState(false); // upload progress
   const [uploadError, setUploadError] = useState(""); // upload errors
   
-  // Payment status state
-  const [paymentStatus, setPaymentStatus] = useState({
-    paymentStatus: 'free',
-    tasksCreated: 0,
-    freeTasksRemaining: 3,
-    isPaywalled: false,
-  });
 
   /**
    * Filter tasks based on selected filter mode
@@ -225,6 +218,10 @@ function Dashboard({ user, onLogout }) {
           await handleFileUpload(taskId, form.file);
         }
       }
+
+      if (onTaskCreated) {
+  onTaskCreated();
+}
       
       // Reset form state after successful save
       setForm({ title: "", description: "", due_date: "", file: null });
