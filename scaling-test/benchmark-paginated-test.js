@@ -30,7 +30,11 @@ function getArg(name, fallback = undefined) {
 // Required arguments
 // ============================================
 
-const SESSION_COOKIE = getArg("SESSION_COOKIE");
+const rawSessionCookie = getArg("SESSION_COOKIE");
+
+const SESSION_COOKIE = rawSessionCookie
+  ? rawSessionCookie.replace(/[\r\n]+/g, "").trim()
+  : "";
 
 if (!SESSION_COOKIE) {
   console.error("Missing required argument:");
