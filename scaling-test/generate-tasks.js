@@ -15,17 +15,68 @@
  *   npm install mysql2 faker
  */
 
+const fs = require("fs");
+const path = require("path");
 const mysql = require("mysql2/promise");
 const { faker } = require("@faker-js/faker");
 
+const envPath = path.resolve(__dirname, "..", "backend", ".env");
+
+if (!fs.existsSync(envPath)) {
+  throw new Error(`Environment file not found: ${envPath}`);
+}
+
+function loadEnvFile(filePath) {
+  const envContent = fs.readFileSync(filePath, "utf8");
+
+  envContent.split(/\r?\n/).forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine || trimmedLine.startsWith("#")) {
+      return;
+    }
+
+    const separatorIndex = trimmedLine.indexOf("=");
+
+    if (separatorIndex === -1) {
+      return;
+    }
+
+    const key = trimmedLine.slice(0, separatorIndex).trim();
+    let value = trimmedLine.slice(separatorIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (typeof process.env[key] === "undefined") {
+      process.env[key] = value;
+    }
+  });
+}
+
+loadEnvFile(envPath);
+
 // ---------------- CONFIG ----------------
 const TOTAL_ROWS = 10000;
+const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
+
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+
+if (missingEnv.length > 0) {
+  throw new Error(
+    `Missing required database environment variables: ${missingEnv.join(", ")}`,
+  );
+}
 
 const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "taskapp",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 };
 // ----------------------------------------
 
@@ -42,7 +93,7 @@ const categories = [
   "Maintenance",
   "Creative",
   "Admin",
-  null
+  null,
 ];
 
 const taskPrefixes = [
@@ -65,7 +116,7 @@ const taskPrefixes = [
   "Audit",
   "Clean",
   "Backup",
-  "Deploy"
+  "Deploy",
 ];
 
 const taskObjects = [
@@ -88,7 +139,7 @@ const taskObjects = [
   "feature rollout",
   "user feedback analysis",
   "podcast outline",
-  "studio session"
+  "studio session",
 ];
 
 function randomDate(startDaysAgo = 180, futureDays = 120) {
@@ -132,7 +183,7 @@ function createTask() {
     dueDate.toISOString().split("T")[0],
     faker.helpers.arrayElement(categories),
     completed,
-    updatedAt
+    updatedAt,
   ];
 }
 
