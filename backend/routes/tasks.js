@@ -1,9 +1,9 @@
 /**
  * Task Management Routes
- * 
+ *
  * This module defines Express routes for task CRUD operations.
  * All routes are protected by authentication middleware.
- * 
+ *
  * Routes include:
  * - GET /: List all user's tasks
  * - GET /:id: Get a specific task
@@ -25,9 +25,9 @@ router.use(auth);
 
 /**
  * Get paginated tasks for the authenticated user
- * 
+ *
  * GET /api/tasks?page=1&limit=50
- * 
+ *
  * Response:
  * - 200: Paginated task payload with rows and pagination metadata
  * - 500: Server error
@@ -35,7 +35,10 @@ router.use(auth);
 router.get("/", async (req, res) => {
   // Get user ID from session (set by auth middleware)
   const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
-  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100);
+  const limit = Math.min(
+    Math.max(Number.parseInt(req.query.limit, 10) || 50, 1),
+    100,
+  );
 
   const total = await Task.countByUser(req.session.userId);
   const totalPages = Math.max(Math.ceil(total / limit), 1);
@@ -61,12 +64,12 @@ router.get("/", async (req, res) => {
 
 /**
  * Get a specific task by ID
- * 
+ *
  * GET /api/tasks/:id
- * 
+ *
  * Parameters:
  * - id: Task ID (must belong to the authenticated user)
- * 
+ *
  * Response:
  * - 200: Task object
  * - 404: Task not found or doesn't belong to user
@@ -82,14 +85,14 @@ router.get("/:id", async (req, res) => {
 
 /**
  * Create a new task
- * 
+ *
  * POST /api/tasks
- * 
+ *
  * Request body:
  * - title: Task title (1-255 characters, will be escaped)
  * - description: Optional task description (will be escaped)
  * - due_date: ISO8601 date string (will be converted to Date)
- * 
+ *
  * Response:
  * - 201: Success with task ID
  * - 400: Validation errors
@@ -117,61 +120,60 @@ router.post(
     // Check user's payment status and task count
     const [userRows] = await db
       .promise()
-      .query(
-        "SELECT payment_status, tasks_created FROM user WHERE id = ?",
-        [req.session.userId]
-      );
-    
+      .query("SELECT payment_status, tasks_created FROM user WHERE id = ?", [
+        req.session.userId,
+      ]);
+
     const user = userRows[0];
-    
+
     // Enforce paywall: block task creation if free user has created 3+ tasks
-    if (user.payment_status === 'free' && user.tasks_created >= 3) {
-      return res.status(403).json({ 
-        error: "Free tier limit reached. Please upgrade to continue creating tasks.",
-        paymentRequired: true 
+    if (user.payment_status === "free" && user.tasks_created >= 3) {
+      return res.status(403).json({
+        error:
+          "Free tier limit reached. Please upgrade to continue creating tasks.",
+        paymentRequired: true,
       });
     }
 
     // Extract validated and processed data from request body
     const { title, description, due_date, category } = req.body;
-    
+
     // Parameter chain: req.session.userId + request body -> Task.create() -> task ID
     // This creates a task associated with the authenticated user
     const id = await Task.create(
       req.session.userId, // User ID from session
-      title,              // Validated title
-      description,         // Validated description (may be null)
-      due_date,           // Validated Date object
-      category || '',     // Use category from request or empty string
+      title, // Validated title
+      description, // Validated description (may be null)
+      due_date, // Validated Date object
+      category || "", // Use category from request or empty string
     );
-    
+
     // Increment task count for the user
     await db
       .promise()
-      .query(
-        "UPDATE user SET tasks_created = tasks_created + 1 WHERE id = ?",
-        [req.session.userId]
-      );
-    
+      .query("UPDATE user SET tasks_created = tasks_created + 1 WHERE id = ?", [
+        req.session.userId,
+      ]);
+
     // Return 201 Created status with the new task ID
     res.status(201).json({ id });
-  }
+  },
 );
 
 /**
  * Update an existing task
- * 
+ *
  * PUT /api/tasks/:id
- * 
+ *
  * Parameters:
  * - id: Task ID (must belong to the authenticated user)
- * 
+ *
  * Request body (all optional):
  * - title: New task title (1-255 characters, will be escaped)
  * - description: New task description (will be escaped)
  * - due_date: New due date (ISO8601 format)
  * - completed: Boolean completion status
- * 
+ *
  * Response:
  * - 200: Success
  * - 400: Validation errors
@@ -203,25 +205,25 @@ router.put(
     // 2. Only if it belongs to the authenticated user
     // 3. Only with the provided fields
     const updated = await Task.update(
-      req.params.id,    // Task ID from URL
+      req.params.id, // Task ID from URL
       req.session.userId, // User ID from session (authorization)
-      req.body,         // Validated fields to update
+      req.body, // Validated fields to update
     );
-    
+
     if (!updated)
       return res.status(404).json({ error: "Not found or no changes" });
     res.json({ success: true });
-  }
+  },
 );
 
 /**
  * Delete a task
- * 
+ *
  * DELETE /api/tasks/:id
- * 
+ *
  * Parameters:
  * - id: Task ID (must belong to the authenticated user)
- * 
+ *
  * Response:
  * - 200: Success
  * - 404: Task not found or doesn't belong to user

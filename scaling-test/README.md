@@ -127,3 +127,312 @@ For faster inserts:
 
 - `generate-tasks.js` → main seeding script
 - `README.md` → setup and usage instructions
+
+
+# Benchmark Paginated Tasks
+
+A lightweight Node.js benchmarking utility for measuring the performance of a paginated tasks API endpoint.
+
+This script is useful for comparing:
+
+* Direct database query performance
+* Paginated API endpoint performance
+* Different pagination sizes
+* Different environments or servers
+* Scaling behavior as dataset size increases
+
+---
+
+# Requirements
+
+* Node.js 18+ (uses native `fetch`)
+* A running backend server
+* A valid authenticated session cookie
+
+---
+
+# File
+
+```bash
+benchmark-paginated-tasks.js
+```
+
+---
+
+# Basic Usage
+
+The only required argument is:
+
+```bash
+--SESSION_COOKIE
+```
+
+Example:
+
+```bash
+node benchmark-paginated-tasks.js \
+  --SESSION_COOKIE="connect.sid=s%3Aabc123"
+```
+
+---
+
+# Optional Arguments
+
+| Argument           | Description              | Default                           |
+| ------------------ | ------------------------ | --------------------------------- |
+| `--SESSION_COOKIE` | Auth session cookie      | REQUIRED                          |
+| `--PAGE`           | Page number to request   | `1`                               |
+| `--LIMIT`          | Number of tasks per page | `50`                              |
+| `--URL`            | API endpoint URL         | `http://localhost:4000/api/tasks` |
+
+---
+
+# Examples
+
+## Default benchmark
+
+```bash
+node benchmark-paginated-tasks.js \
+  --SESSION_COOKIE="connect.sid=s%3Aabc123"
+```
+
+Requests:
+
+```http
+GET /api/tasks?page=1&limit=50
+```
+
+---
+
+## Benchmark larger pages
+
+```bash
+node benchmark-paginated-tasks.js \
+  --SESSION_COOKIE="connect.sid=s%3Aabc123" \
+  --LIMIT=500
+```
+
+Useful for testing:
+
+* large payload performance
+* JSON serialization overhead
+* pagination scaling
+
+---
+
+## Benchmark different pages
+
+```bash
+node benchmark-paginated-tasks.js \
+  --SESSION_COOKIE="connect.sid=s%3Aabc123" \
+  --PAGE=10 \
+  --LIMIT=100
+```
+
+Useful for checking:
+
+* OFFSET query performance
+* deep pagination slowdown
+* indexing efficiency
+
+---
+
+## Benchmark different environments
+
+```bash
+node benchmark-paginated-tasks.js \
+  --SESSION_COOKIE="connect.sid=s%3Aabc123" \
+  --URL="http://localhost:5000/api/tasks"
+```
+
+Useful for comparing:
+
+* local vs production
+* development vs optimized builds
+* different backend implementations
+
+---
+
+# Example Output
+
+```text
+====================================
+Paginated Endpoint Benchmark
+====================================
+URL: http://localhost:4000/api/tasks
+Page: 1
+Limit: 50
+
+Request successful.
+
+Response time: 42.18 ms
+Returned tasks: 50
+Total tasks: 10000
+Current page: 1
+Total pages: 200
+
+Benchmark completed.
+```
+
+---
+
+# Performance Testing Ideas
+
+## Compare page sizes
+
+Test how response time changes as payload size increases:
+
+```bash
+--LIMIT=50
+--LIMIT=100
+--LIMIT=500
+--LIMIT=1000
+```
+
+---
+
+## Compare pagination depth
+
+Deep OFFSET queries can become slow:
+
+```bash
+--PAGE=1
+--PAGE=10
+--PAGE=100
+--PAGE=1000
+```
+
+---
+
+## Compare environments
+
+Benchmark:
+
+* local development
+* Docker containers
+* VPS deployments
+* cloud hosting
+* optimized production builds
+
+---
+
+# Recommended Extensions
+
+## 1. Multi-run averages
+
+Run the benchmark several times and compute:
+
+* average response time
+* median response time
+* fastest request
+* slowest request
+
+This helps eliminate noise from single-request timing.
+
+---
+
+## 2. Concurrent request testing
+
+Add support for:
+
+```bash
+--CONCURRENT=10
+```
+
+to simulate multiple simultaneous users.
+
+Useful for load testing.
+
+---
+
+## 3. Export results
+
+Save benchmark data to:
+
+* JSON
+* CSV
+* Markdown tables
+
+for tracking performance changes over time.
+
+---
+
+## 4. Memory usage metrics
+
+Measure:
+
+```js
+process.memoryUsage()
+```
+
+before and after requests.
+
+Useful for detecting serialization or payload issues.
+
+---
+
+## 5. Database timing comparison
+
+Pair this script with your direct SQL benchmark script to compare:
+
+| Test            | Measures                  |
+| --------------- | ------------------------- |
+| Direct DB query | Raw MySQL speed           |
+| API benchmark   | Real application overhead |
+
+This gives a much clearer picture of backend bottlenecks.
+
+---
+
+# Notes
+
+This benchmark measures the full API request lifecycle, including:
+
+* routing
+* middleware
+* authentication/session handling
+* database query execution
+* JSON serialization
+* HTTP response delivery
+
+As a result, API timings will naturally be slower than direct database query benchmarks.
+
+That difference is expected and useful for identifying application-layer overhead.
+
+---
+
+# Troubleshooting
+
+## 401 Unauthorized
+
+Your session cookie is invalid or expired.
+
+Log in again and copy a fresh cookie.
+
+---
+
+## ECONNREFUSED
+
+Your backend server is not running.
+
+Start the server before benchmarking.
+
+---
+
+## Very Slow Deep Pages
+
+Large page numbers often indicate inefficient OFFSET queries.
+
+Consider switching to:
+
+* cursor pagination
+* keyset pagination
+* indexed pagination strategies
+
+for better scalability.
+
+---
+
+# License
+
+Internal development/testing utility.

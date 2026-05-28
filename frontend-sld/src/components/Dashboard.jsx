@@ -2,38 +2,39 @@
  * @fileoverview Dashboard component for task management
  * @description Main dashboard interface for viewing, creating, editing, and deleting tasks.
  * Features include task filtering, real-time updates, and form validation.
- * 
+ *
  * @component Dashboard
  * @param {Object} props - Component props
  * @param {Function} props.onLogout - Callback function to handle user logout
- * 
+ *
  * @author Generated
  * @since 1.0.0
  */
-import { createSignal, createEffect, onMount, For } from 'solid-js';
+import { createSignal, createEffect, onMount, For } from "solid-js";
 
 /**
  * Dashboard component - Main task management interface
- * 
+ *
  * Provides full CRUD operations for tasks with filtering capabilities.
  * Uses SolidJS reactive signals for state management.
- * 
+ *
  * @param {Object} props - Component properties
  * @param {Function} props.onLogout - Function to call when user logs out
  * @returns {JSX.Element} Rendered dashboard component
  */
 function Dashboard(props) {
   // Reactive state signals for component data
-  const [tasks, setTasks] = createSignal([]);           // Array of all tasks from API
-  const [loading, setLoading] = createSignal(true);     // Loading state for async operations
-  const [error, setError] = createSignal('');           // Error message display
-  const [form, setForm] = createSignal({                // Form data for task creation/editing
-    title: '',
-    description: '',
-    due_date: ''
+  const [tasks, setTasks] = createSignal([]); // Array of all tasks from API
+  const [loading, setLoading] = createSignal(true); // Loading state for async operations
+  const [error, setError] = createSignal(""); // Error message display
+  const [form, setForm] = createSignal({
+    // Form data for task creation/editing
+    title: "",
+    description: "",
+    due_date: "",
   });
-  const [editing, setEditing] = createSignal(null);     // ID of task currently being edited
-  const [filter, setFilter] = createSignal('all');      // Current filter state: 'all', 'dueSoon', or 'completed'
+  const [editing, setEditing] = createSignal(null); // ID of task currently being edited
+  const [filter, setFilter] = createSignal("all"); // Current filter state: 'all', 'dueSoon', or 'completed'
   const [page, setPage] = createSignal(1);
   const [pagination, setPagination] = createSignal({
     page: 1,
@@ -41,15 +42,15 @@ function Dashboard(props) {
     total: 0,
     totalPages: 1,
   });
-  
+
   // Media upload state signals
-  const [mediaFiles, setMediaFiles] = createSignal({});  // Media files per task
+  const [mediaFiles, setMediaFiles] = createSignal({}); // Media files per task
   const [uploading, setUploading] = createSignal(false); // Upload progress state
-  const [uploadError, setUploadError] = createSignal(''); // Upload error messages
-  
+  const [uploadError, setUploadError] = createSignal(""); // Upload error messages
+
   // Payment status state
   const [paymentStatus, setPaymentStatus] = createSignal({
-    paymentStatus: 'free',
+    paymentStatus: "free",
     tasksCreated: 0,
     freeTasksRemaining: 3,
     isPaywalled: false,
@@ -57,10 +58,10 @@ function Dashboard(props) {
 
   /**
    * Filters tasks based on the currently selected filter option
-   * 
+   *
    * @function filteredTasks
    * @returns {Array} Filtered array of tasks based on current filter state
-   * 
+   *
    * Filter logic:
    * - 'all': Returns all tasks
    * - 'completed': Returns only tasks marked as completed
@@ -68,31 +69,31 @@ function Dashboard(props) {
    */
   const filteredTasks = () => {
     return tasks().filter((task) => {
-      const now = new Date();                    // Current timestamp for comparison
-      const dueDate = new Date(task.due_date);   // Convert task due date to Date object
+      const now = new Date(); // Current timestamp for comparison
+      const dueDate = new Date(task.due_date); // Convert task due date to Date object
       // Calculate hours difference (positive = future, negative = past)
       const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
-      
+
       switch (filter()) {
-        case 'completed':
-          return task.completed;  // Only show completed tasks
-        case 'dueSoon':
+        case "completed":
+          return task.completed; // Only show completed tasks
+        case "dueSoon":
           // Show incomplete tasks due within 24 hours (including those overdue by up to 24h)
           return !task.completed && hoursUntilDue <= 24 && hoursUntilDue > -24;
-        case 'all':
+        case "all":
         default:
-          return true;  // Show all tasks regardless of status or due date
+          return true; // Show all tasks regardless of status or due date
       }
     });
   };
 
   const loadTasks = async (targetPage = page()) => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const response = await fetch(`/api/tasks?page=${targetPage}&limit=50`, {
-        credentials: 'include',
+        credentials: "include",
       });
       const data = await response.json();
 
@@ -119,7 +120,7 @@ function Dashboard(props) {
         setTasks([]);
       }
     } catch (err) {
-      setError('Failed to load tasks');
+      setError("Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -131,13 +132,15 @@ function Dashboard(props) {
   onMount(async () => {
     // Fetch payment status
     try {
-      const response = await fetch('/api/payment/status', { credentials: 'include' });
+      const response = await fetch("/api/payment/status", {
+        credentials: "include",
+      });
       const data = await response.json();
       setPaymentStatus(data);
     } catch (err) {
       // If payment status fetch fails, assume free tier
       setPaymentStatus({
-        paymentStatus: 'free',
+        paymentStatus: "free",
         tasksCreated: 0,
         freeTasksRemaining: 3,
         isPaywalled: false,
@@ -151,13 +154,13 @@ function Dashboard(props) {
 
   /**
    * Fetch media files for all tasks when tasks change
-   * 
+   *
    * @function fetchMediaEffect
    * @returns {void}
    */
   createEffect(() => {
     if (tasks().length > 0) {
-      tasks().forEach(task => {
+      tasks().forEach((task) => {
         fetchMediaFiles(task.id);
       });
     }
@@ -165,69 +168,73 @@ function Dashboard(props) {
 
   /**
    * Handles form submission for creating or updating tasks
-   * 
+   *
    * Determines whether to create a new task or update an existing one
    * based on the editing state. Performs API calls and refreshes task list.
-   * 
+   *
    * @async
-     * @function handleSubmit
+   * @function handleSubmit
    * @param {Event} e - Form submission event
    * @returns {Promise<void>}
    */
   const handleSubmit = async (e) => {
-    e.preventDefault();  // Prevent default form submission behavior
-    setError('');        // Clear any existing errors
-    
+    e.preventDefault(); // Prevent default form submission behavior
+    setError(""); // Clear any existing errors
+
     try {
       // Determine HTTP method and URL based on editing state
-      const method = editing() ? 'PUT' : 'POST';
-      const url = editing() ? `/api/tasks/${editing()}` : '/api/tasks';
-      
+      const method = editing() ? "PUT" : "POST";
+      const url = editing() ? `/api/tasks/${editing()}` : "/api/tasks";
+
       let taskId;
-      
+
       if (editing()) {
         // Update existing task (no file upload)
         const response = await fetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',  // Include authentication cookies
-          body: JSON.stringify(form()),  // Convert form data to JSON
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // Include authentication cookies
+          body: JSON.stringify(form()), // Convert form data to JSON
         });
-        
-        if (!response.ok) throw new Error('Failed to save task');
+
+        if (!response.ok) throw new Error("Failed to save task");
         taskId = editing();
       } else {
         // Create new task
         const response = await fetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',  // Include authentication cookies
-          body: JSON.stringify(form()),  // Convert form data to JSON
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // Include authentication cookies
+          body: JSON.stringify(form()), // Convert form data to JSON
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           if (errorData.paymentRequired) {
-            throw new Error('Free tier limit reached. Please upgrade to continue creating tasks.');
+            throw new Error(
+              "Free tier limit reached. Please upgrade to continue creating tasks.",
+            );
           }
-          throw new Error('Failed to create task');
+          throw new Error("Failed to create task");
         }
-        
+
         const taskData = await response.json();
         taskId = taskData.id;
-        
+
         // Upload file if one was selected
         if (form().file) {
           await handleFileUpload(taskId, form().file);
         }
       }
-      
+
       // Reset form state after successful submission
-      setForm({ title: '', description: '', due_date: '', file: null });
-      setEditing(null);  // Exit editing mode
-      
+      setForm({ title: "", description: "", due_date: "", file: null });
+      setEditing(null); // Exit editing mode
+
       // Refresh payment status after task creation
-      const paymentResponse = await fetch('/api/payment/status', { credentials: 'include' });
+      const paymentResponse = await fetch("/api/payment/status", {
+        credentials: "include",
+      });
       const paymentData = await paymentResponse.json();
       setPaymentStatus(paymentData);
 
@@ -238,13 +245,13 @@ function Dashboard(props) {
         await loadTasks(page());
       }
     } catch (err) {
-      setError(err.message);  // Display error to user
+      setError(err.message); // Display error to user
     }
   };
 
   /**
    * Puts a task into edit mode by populating the form with its data
-   * 
+   *
    * @function handleEdit
    * @param {Object} task - The task object to edit
    * @param {number} task.id - Task ID
@@ -253,33 +260,33 @@ function Dashboard(props) {
    * @param {string} task.due_date - Task due date in ISO format
    */
   const handleEdit = (task) => {
-    setEditing(task.id);  // Set editing mode with task ID
+    setEditing(task.id); // Set editing mode with task ID
     // Populate form with existing task data
     setForm({
       title: task.title,
-      description: task.description || '',  // Handle undefined description
-      due_date: task.due_date ? task.due_date.slice(0, 10) : '',  // Format date for input
+      description: task.description || "", // Handle undefined description
+      due_date: task.due_date ? task.due_date.slice(0, 10) : "", // Format date for input
     });
   };
 
   /**
    * Deletes a task after user confirmation
-   * 
+   *
    * Shows a confirmation dialog before proceeding with deletion.
    * Updates local state immediately for better UX.
-   * 
+   *
    * @async
    * @function handleDelete
    * @param {number} id - ID of the task to delete
    * @returns {Promise<void>}
    */
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this task?')) return;  // User cancelled
-    
+    if (!window.confirm("Delete this task?")) return; // User cancelled
+
     // Send delete request to API
     await fetch(`/api/tasks/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
+      method: "DELETE",
+      credentials: "include",
     });
 
     await loadTasks(page());
@@ -287,10 +294,10 @@ function Dashboard(props) {
 
   /**
    * Toggles the completion status of a task
-   * 
+   *
    * Sends a PUT request to update the task's completed status.
    * Uses 0/1 for database compatibility instead of boolean.
-   * 
+   *
    * @async
    * @function toggleTask
    * @param {Object} task - The task to toggle
@@ -301,43 +308,45 @@ function Dashboard(props) {
   const toggleTask = async (task) => {
     // Convert to 0/1 for database compatibility (many databases use integers)
     const completed = task.completed ? 0 : 1;
-    
+
     // Update task in backend
     await fetch(`/api/tasks/${task.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ completed: !task.completed }),  // Send boolean to API
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ completed: !task.completed }), // Send boolean to API
     });
-    
+
     // Update local state with new completion status
-    setTasks(tasks().map((t) =>
-      t.id === task.id ? { ...t, completed } : t,  // Spread operator to update specific task
-    ));
+    setTasks(
+      tasks().map(
+        (t) => (t.id === task.id ? { ...t, completed } : t), // Spread operator to update specific task
+      ),
+    );
   };
 
   /**
    * Cancels edit mode and resets the form to empty state
-   * 
+   *
    * Called when user clicks cancel button or after successful edit.
    * Clears both editing state and form data.
-   * 
+   *
    * @function cancelEdit
    * @returns {void}
    */
   const cancelEdit = () => {
-    setEditing(null);  // Exit editing mode
+    setEditing(null); // Exit editing mode
     // Reset form to initial empty state
     setForm({
-      title: '',
-      description: '',
-      due_date: '',
+      title: "",
+      description: "",
+      due_date: "",
     });
   };
 
   /**
    * Fetches media files for a specific task
-   * 
+   *
    * @async
    * @function fetchMediaFiles
    * @param {number} taskId - Task ID to fetch media for
@@ -346,23 +355,23 @@ function Dashboard(props) {
   const fetchMediaFiles = async (taskId) => {
     try {
       const response = await fetch(`/api/upload/${taskId}`, {
-        credentials: 'include',
+        credentials: "include",
       });
       const data = await response.json();
       if (data.success) {
-        setMediaFiles(prev => ({
+        setMediaFiles((prev) => ({
           ...prev,
-          [taskId]: data.media
+          [taskId]: data.media,
         }));
       }
     } catch (error) {
-      console.error('Error fetching media files:', error);
+      console.error("Error fetching media files:", error);
     }
   };
 
   /**
    * Handles file upload for a task
-   * 
+   *
    * @async
    * @function handleFileUpload
    * @param {number} taskId - Task ID to attach media to
@@ -371,32 +380,32 @@ function Dashboard(props) {
    */
   const handleFileUpload = async (taskId, file) => {
     if (!file) return;
-    
+
     setUploading(true);
-    setUploadError('');
-    
+    setUploadError("");
+
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('task_id', taskId);
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("task_id", taskId);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
-        credentials: 'include',
+        credentials: "include",
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // Refresh media files for this task
         await fetchMediaFiles(taskId);
-        setUploadError('');
+        setUploadError("");
       } else {
-        setUploadError(data.error || 'Upload failed');
+        setUploadError(data.error || "Upload failed");
       }
     } catch (error) {
-      setUploadError('Upload failed. Please try again.');
+      setUploadError("Upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -404,7 +413,7 @@ function Dashboard(props) {
 
   /**
    * Handles media file deletion
-   * 
+   *
    * @async
    * @function handleMediaDelete
    * @param {number} mediaId - Media ID to delete
@@ -414,26 +423,26 @@ function Dashboard(props) {
   const handleMediaDelete = async (mediaId, taskId) => {
     try {
       const response = await fetch(`/api/upload/${mediaId}`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: "DELETE",
+        credentials: "include",
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // Refresh media files for this task
         await fetchMediaFiles(taskId);
       } else {
-        setUploadError(data.error || 'Delete failed');
+        setUploadError(data.error || "Delete failed");
       }
     } catch (error) {
-      setUploadError('Delete failed. Please try again.');
+      setUploadError("Delete failed. Please try again.");
     }
   };
 
   /**
    * Renders media file (image or video)
-   * 
+   *
    * @function renderMediaFile
    * @param {Object} media - Media object
    * @param {number} media.id - Media ID
@@ -442,9 +451,9 @@ function Dashboard(props) {
    * @returns {JSX.Element} Rendered media element
    */
   const renderMediaFile = (media) => {
-    const isImage = media.file_type.startsWith('image/');
-    const isVideo = media.file_type.startsWith('video/');
-    
+    const isImage = media.file_type.startsWith("image/");
+    const isVideo = media.file_type.startsWith("video/");
+
     if (isImage) {
       return (
         <img
@@ -455,11 +464,11 @@ function Dashboard(props) {
       );
     } else if (isVideo) {
       return (
-        <video
-          className="media-video"
-          controls
-        >
-          <source src={`/api/upload/file/${media.task_id}/${media.id}`} type={media.file_type} />
+        <video className="media-video" controls>
+          <source
+            src={`/api/upload/file/${media.task_id}/${media.id}`}
+            type={media.file_type}
+          />
           Your browser does not support the video tag.
         </video>
       );
@@ -471,10 +480,10 @@ function Dashboard(props) {
   return (
     <div className="dashboard-container">
       <h2 className="dtitle">Task Dashboard</h2>
-      
+
       {/* Payment status display */}
       <div className="payment-status-bar">
-        {paymentStatus().paymentStatus === 'paid' ? (
+        {paymentStatus().paymentStatus === "paid" ? (
           <span className="payment-status-paid">
             ✓ Premium Account - Unlimited Tasks
           </span>
@@ -484,31 +493,32 @@ function Dashboard(props) {
           </span>
         )}
       </div>
-      
+
       {/* Paywall warning */}
       {paymentStatus().isPaywalled && (
         <div className="paywall-warning">
-          ⚠️ You've reached your free task limit. Upgrade to continue creating tasks.
+          ⚠️ You've reached your free task limit. Upgrade to continue creating
+          tasks.
         </div>
       )}
-      
+
       {/* Filter buttons for task viewing */}
       <div className="filter-buttons">
-        <button 
-          classList={{ active: filter() === 'all' }}  // Dynamic class for active state
-          onClick={() => setFilter('all')}
+        <button
+          classList={{ active: filter() === "all" }} // Dynamic class for active state
+          onClick={() => setFilter("all")}
         >
           All Tasks
         </button>
-        <button 
-          classList={{ active: filter() === 'dueSoon' }}
-          onClick={() => setFilter('dueSoon')}
+        <button
+          classList={{ active: filter() === "dueSoon" }}
+          onClick={() => setFilter("dueSoon")}
         >
           Due Soon
         </button>
-        <button 
-          classList={{ active: filter() === 'completed' }}
-          onClick={() => setFilter('completed')}
+        <button
+          classList={{ active: filter() === "completed" }}
+          onClick={() => setFilter("completed")}
         >
           Completed
         </button>
@@ -522,93 +532,105 @@ function Dashboard(props) {
           Previous
         </button>
         <span>
-          Page {pagination().page} of {pagination().totalPages} ({pagination().total} total tasks)
+          Page {pagination().page} of {pagination().totalPages} (
+          {pagination().total} total tasks)
         </span>
         <button
-          onClick={() => setPage((currentPage) => Math.min(pagination().totalPages, currentPage + 1))}
+          onClick={() =>
+            setPage((currentPage) =>
+              Math.min(pagination().totalPages, currentPage + 1),
+            )
+          }
           disabled={pagination().page >= pagination().totalPages}
         >
           Next
         </button>
       </div>
-      
+
       {/* Task creation/editing form */}
-      <h3 className="dnt-title">{editing() ? 'Edit Task' : 'Add New Task'}</h3>
+      <h3 className="dnt-title">{editing() ? "Edit Task" : "Add New Task"}</h3>
       {!paymentStatus().isPaywalled || editing() ? (
         <form className="dform" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Title"
-          value={form().title}
-          onInput={(e) => setForm({ ...form(), title: e.target.value })}
-          required
-        />
-        <input
-          type="date"
-          value={form().due_date}
-          onInput={(e) => setForm({ ...form(), due_date: e.target.value })}
-          required
-        />
-        <textarea
-          placeholder="Description"
-          value={form().description}
-          onInput={(e) => setForm({ ...form(), description: e.target.value })}
-        />
-        {/* File upload for new tasks */}
-        {!editing() && (
-          <div className="file-upload-section" style={{ margin: '10px 0' }}>
-            <label htmlFor="task-file" style={{ display: 'block', marginBottom: '5px' }}>
-              Attach file (optional):
-            </label>
-            <input
-              id="task-file"
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  setForm({ ...form(), file });
-                }
-              }}
-              style={{ marginBottom: '10px' }}
-            />
-            {form().file && (
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                Selected: {form().file.name} ({(form().file.size / 1024 / 1024).toFixed(2)} MB)
-              </div>
-            )}
-          </div>
-        )}
-        <button type="submit">{editing() ? 'Update' : 'Add'} Task</button>
-        {/* Show cancel button only when editing */}
-        {editing() && (
-          <button
-            type="button"
-            onClick={cancelEdit}
-          >
-            Cancel
-          </button>
-        )}
-      </form>
+          <input
+            type="text"
+            placeholder="Title"
+            value={form().title}
+            onInput={(e) => setForm({ ...form(), title: e.target.value })}
+            required
+          />
+          <input
+            type="date"
+            value={form().due_date}
+            onInput={(e) => setForm({ ...form(), due_date: e.target.value })}
+            required
+          />
+          <textarea
+            placeholder="Description"
+            value={form().description}
+            onInput={(e) => setForm({ ...form(), description: e.target.value })}
+          />
+          {/* File upload for new tasks */}
+          {!editing() && (
+            <div className="file-upload-section" style={{ margin: "10px 0" }}>
+              <label
+                htmlFor="task-file"
+                style={{ display: "block", marginBottom: "5px" }}
+              >
+                Attach file (optional):
+              </label>
+              <input
+                id="task-file"
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setForm({ ...form(), file });
+                  }
+                }}
+                style={{ marginBottom: "10px" }}
+              />
+              {form().file && (
+                <div style={{ fontSize: "14px", color: "#666" }}>
+                  Selected: {form().file.name} (
+                  {(form().file.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              )}
+            </div>
+          )}
+          <button type="submit">{editing() ? "Update" : "Add"} Task</button>
+          {/* Show cancel button only when editing */}
+          {editing() && (
+            <button type="button" onClick={cancelEdit}>
+              Cancel
+            </button>
+          )}
+        </form>
       ) : (
         <div className="paywall-message">
-          <p>Task creation is disabled. Please upgrade your account to continue.</p>
+          <p>
+            Task creation is disabled. Please upgrade your account to continue.
+          </p>
         </div>
       )}
-      
+
       {/* Error message display */}
       {error() && <div className="error">{error()}</div>}
-      
+
       {/* Upload error display */}
-      {uploadError() && <div className="error" style={{ marginTop: '10px' }}>{uploadError()}</div>}
-      
+      {uploadError() && (
+        <div className="error" style={{ marginTop: "10px" }}>
+          {uploadError()}
+        </div>
+      )}
+
       {/* Dynamic task list title based on filter */}
       <h3 className="dtl-title">
-        {filter() === 'all' && 'All Tasks'}
-        {filter() === 'dueSoon' && 'Due Soon'}
-        {filter() === 'completed' && 'Completed'}
+        {filter() === "all" && "All Tasks"}
+        {filter() === "dueSoon" && "Due Soon"}
+        {filter() === "completed" && "Completed"}
       </h3>
-      
+
       {/* Task list with loading state */}
       {loading() ? (
         <div>Loading...</div>
@@ -622,18 +644,24 @@ function Dashboard(props) {
                 <input
                   className="check"
                   type="checkbox"
-                  checked={!!task.completed}  // Convert to boolean
+                  checked={!!task.completed} // Convert to boolean
                   onChange={() => toggleTask(task)}
                 />
                 {/* Task due date display */}
                 <span className="dcat-lab">
-                  Due: {task.due_date && new Date(task.due_date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                  Due:{" "}
+                  {task.due_date &&
+                    new Date(task.due_date).toLocaleDateString("en-US", {
+                      timeZone: "UTC",
+                    })}
                 </span>
                 <br />
                 {/* Task title with strikethrough for completed tasks */}
                 <strong
                   className="task"
-                  style={{ 'text-decoration': task.completed ? 'line-through' : 'none' }}
+                  style={{
+                    "text-decoration": task.completed ? "line-through" : "none",
+                  }}
                 >
                   Task: {task.title}
                 </strong>
@@ -648,27 +676,31 @@ function Dashboard(props) {
                 <br />
                 {/* Media files display */}
                 {mediaFiles()[task.id] && mediaFiles()[task.id].length > 0 && (
-                  <div className="media-container" style={{ margin: '10px 0' }}>
+                  <div className="media-container" style={{ margin: "10px 0" }}>
                     <strong>Media:</strong>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    <div
+                      style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}
+                    >
                       <For each={mediaFiles()[task.id]}>
                         {(media) => (
-                          <div style={{ position: 'relative' }}>
+                          <div style={{ position: "relative" }}>
                             {renderMediaFile(media)}
                             <button
-                              onClick={() => handleMediaDelete(media.id, task.id)}
+                              onClick={() =>
+                                handleMediaDelete(media.id, task.id)
+                              }
                               style={{
-                                position: 'absolute',
-                                top: '5px',
-                                right: '5px',
-                                background: 'red',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '20px',
-                                height: '20px',
-                                cursor: 'pointer',
-                                fontSize: '12px'
+                                position: "absolute",
+                                top: "5px",
+                                right: "5px",
+                                background: "red",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "50%",
+                                width: "20px",
+                                height: "20px",
+                                cursor: "pointer",
+                                fontSize: "12px",
                               }}
                             >
                               ×
@@ -679,9 +711,9 @@ function Dashboard(props) {
                     </div>
                   </div>
                 )}
-                
+
                 {/* File upload */}
-                <div className="upload-section" style={{ margin: '10px 0' }}>
+                <div className="upload-section" style={{ margin: "10px 0" }}>
                   <input
                     type="file"
                     accept="image/*,video/*"
@@ -692,11 +724,13 @@ function Dashboard(props) {
                       }
                     }}
                     disabled={uploading()}
-                    style={{ margin: '5px 0' }}
+                    style={{ margin: "5px 0" }}
                   />
-                  {uploading() && <span style={{ marginLeft: '10px' }}>Uploading...</span>}
+                  {uploading() && (
+                    <span style={{ marginLeft: "10px" }}>Uploading...</span>
+                  )}
                 </div>
-                
+
                 {/* Action buttons for task management */}
                 <span className="d-btn-span">
                   <button onClick={() => handleEdit(task)}>Edit</button>
@@ -707,7 +741,7 @@ function Dashboard(props) {
           </For>
         </ul>
       )}
-      
+
       {/* Logout button */}
       <button className="dlog-btn" onClick={props.onLogout}>
         Logout

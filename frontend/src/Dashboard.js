@@ -1,17 +1,17 @@
 /**
  * Dashboard Component
- * 
+ *
  * This is the main task management interface that handles:
  * - Displaying and filtering tasks
  * - Creating new tasks
  * - Editing existing tasks
  * - Deleting tasks
  * - Marking tasks as complete
- * 
+ *
  * Props:
  * - user: User object with authentication data
  * - onLogout: Function to handle user logout
- * 
+ *
  * State Management:
  * - tasks: Array of task objects
  * - loading: Loading state for API calls
@@ -28,14 +28,14 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   // Task form state for create/edit operations
   const [form, setForm] = useState({
     title: "",
     description: "",
     due_date: "",
   });
-  
+
   // UI state management
   const [editing, setEditing] = useState(null); // task id being edited
   const [filter, setFilter] = useState("all"); // Filter state
@@ -46,22 +46,21 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
     total: 0,
     totalPages: 1,
   });
-  
+
   // Media upload state
   const [mediaFiles, setMediaFiles] = useState({}); // media files per task
   const [uploading, setUploading] = useState(false); // upload progress
   const [uploadError, setUploadError] = useState(""); // upload errors
-  
 
   /**
    * Filter tasks based on selected filter mode
-   * 
+   *
    * This computed property filters the tasks array based on
    * the current filter selection:
    * - 'all': Show all tasks
    * - 'completed': Show only completed tasks
    * - 'dueSoon': Show tasks due within 24 hours (including overdue)
-   * 
+   *
    * Time Calculation:
    * - hoursUntilDue = (dueDate - now) / (1000 * 60 * 60)
    * - Positive: Future due date
@@ -73,7 +72,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
     const dueDate = new Date(task.due_date);
     // Calculate hours until due (positive = future, negative = overdue)
     const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
-    
+
     switch (filter) {
       case "completed":
         return task.completed;
@@ -85,7 +84,6 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
         return true;
     }
   });
-
 
   const loadTasks = async (targetPage = page) => {
     setLoading(true);
@@ -143,9 +141,9 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
       });
       const data = await response.json();
       if (data.success) {
-        setMediaFiles(prev => ({
+        setMediaFiles((prev) => ({
           ...prev,
-          [taskId]: data.media
+          [taskId]: data.media,
         }));
       }
     } catch (error) {
@@ -158,7 +156,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
    */
   useEffect(() => {
     if (tasks.length > 0) {
-      tasks.forEach(task => {
+      tasks.forEach((task) => {
         fetchMediaFiles(task.id);
       });
     }
@@ -166,10 +164,10 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
 
   /**
    * Handle task creation or update
-   * 
+   *
    * This function manages both creating new tasks and updating
    * existing tasks based on the editing state:
-   * 
+   *
    * Flow:
    * 1. Prevent form submission
    * 2. Clear errors
@@ -177,7 +175,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
    * 4. Make API call with form data
    * 5. Reset form state on success
    * 6. Refresh task list
-   * 
+   *
    * API Call Chain:
    * - editing null: POST /api/tasks (create)
    * - editing has ID: PUT /api/tasks/{id} (update)
@@ -190,9 +188,9 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
       // Dynamic API call based on editing state
       const method = editing ? "PUT" : "POST";
       const url = editing ? `/api/tasks/${editing}` : "/api/tasks";
-      
+
       let taskId;
-      
+
       if (editing) {
         // Update existing task (no file upload)
         const res = await fetch(url, {
@@ -212,10 +210,10 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
           body: JSON.stringify(form),
         });
         if (!res.ok) throw new Error("Failed to create task");
-        
+
         const taskData = await res.json();
         taskId = taskData.id;
-        
+
         // Upload file if one was selected
         if (form.file) {
           await handleFileUpload(taskId, form.file);
@@ -223,9 +221,9 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
       }
 
       if (onTaskCreated) {
-  onTaskCreated();
-}
-      
+        onTaskCreated();
+      }
+
       // Reset form state after successful save
       setForm({ title: "", description: "", due_date: "", file: null });
       setEditing(null);
@@ -245,23 +243,23 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
    */
   const handleFileUpload = async (taskId, file) => {
     if (!file) return;
-    
+
     setUploading(true);
     setUploadError("");
-    
+
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("task_id", taskId);
-      
+
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
         credentials: "include",
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // Refresh media files for this task
         await fetchMediaFiles(taskId);
@@ -285,9 +283,9 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
         method: "DELETE",
         credentials: "include",
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // Refresh media files for this task
         await fetchMediaFiles(taskId);
@@ -305,7 +303,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   const renderMediaFile = (media) => {
     const isImage = media.file_type.startsWith("image/");
     const isVideo = media.file_type.startsWith("video/");
-    
+
     if (isImage) {
       return (
         <img
@@ -316,11 +314,11 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
       );
     } else if (isVideo) {
       return (
-        <video
-          className="media-video"
-          controls
-        >
-          <source src={`/api/upload/file/${media.task_id}/${media.id}`} type={media.file_type} />
+        <video className="media-video" controls>
+          <source
+            src={`/api/upload/file/${media.task_id}/${media.id}`}
+            type={media.file_type}
+          />
           Your browser does not support the video tag.
         </video>
       );
@@ -330,10 +328,10 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
 
   /**
    * Prepare task for editing
-   * 
+   *
    * This function populates the form with existing task data
    * and sets the editing state to the task ID.
-   * 
+   *
    * Data Transformation:
    * - task.title -> form.title
    * - task.description -> form.description (fallback to empty string)
@@ -353,14 +351,14 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
 
   /**
    * Handle task deletion
-   * 
+   *
    * This function deletes a task after user confirmation:
-   * 
+   *
    * Flow:
    * 1. Show confirmation dialog
    * 2. If confirmed, make DELETE API call
    * 3. Update local state to remove task from list
-   * 
+   *
    * API Call Chain:
    * - DELETE /api/tasks/{id} with session credentials
    * - Update local state immediately (optimistic UI)
@@ -368,7 +366,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   const handleDelete = async (id) => {
     // User confirmation before destructive action
     if (!window.confirm("Delete this task?")) return;
-    
+
     // API call to delete task
     await fetch(`/api/tasks/${id}`, {
       method: "DELETE",
@@ -380,7 +378,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
 
   /**
    * Render Dashboard component
-   * 
+   *
    * The render structure includes:
    * - Filter buttons for task filtering
    * - Task form for create/edit operations
@@ -392,40 +390,43 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
     <div className="dashboard-container">
       {/* Dashboard title */}
       <h2 className="dtitle">Task Dashboard</h2>
-      
+
       {/* Payment status display */}
       <div className="payment-status-bar">
-        {paymentStatus.paymentStatus === 'paid' ? (
-          <span className="payment-status-paid">✓ Premium Account - Unlimited Tasks</span>
+        {paymentStatus.paymentStatus === "paid" ? (
+          <span className="payment-status-paid">
+            ✓ Premium Account - Unlimited Tasks
+          </span>
         ) : (
           <span className="payment-status-free">
             Free Tasks Remaining: {paymentStatus.freeTasksRemaining} / 3
           </span>
         )}
       </div>
-      
+
       {/* Paywall warning */}
       {paymentStatus.isPaywalled && (
         <div className="paywall-warning">
-          ⚠️ You've reached your free task limit. Upgrade to continue creating tasks.
+          ⚠️ You've reached your free task limit. Upgrade to continue creating
+          tasks.
         </div>
       )}
-      
+
       {/* Filter buttons section */}
       <div className="filter-buttons">
-        <button 
+        <button
           className={filter === "all" ? "active" : ""}
           onClick={() => setFilter("all")}
         >
           All Tasks
         </button>
-        <button 
+        <button
           className={filter === "dueSoon" ? "active" : ""}
           onClick={() => setFilter("dueSoon")}
         >
           Due Soon
         </button>
-        <button 
+        <button
           className={filter === "completed" ? "active" : ""}
           onClick={() => setFilter("completed")}
         >
@@ -441,16 +442,21 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
           Previous
         </button>
         <span>
-          Page {pagination.page} of {pagination.totalPages} ({pagination.total} total tasks)
+          Page {pagination.page} of {pagination.totalPages} ({pagination.total}{" "}
+          total tasks)
         </span>
         <button
-          onClick={() => setPage((currentPage) => Math.min(pagination.totalPages, currentPage + 1))}
+          onClick={() =>
+            setPage((currentPage) =>
+              Math.min(pagination.totalPages, currentPage + 1),
+            )
+          }
           disabled={pagination.page >= pagination.totalPages}
         >
           Next
         </button>
       </div>
-      
+
       {/* Task form section */}
       <h3 className="dnt-title">{editing ? "Edit Task" : "Add New Task"}</h3>
       {!paymentStatus.isPaywalled || editing ? (
@@ -478,8 +484,11 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
           />
           {/* File upload for new tasks */}
           {!editing && (
-            <div className="file-upload-section" style={{ margin: '10px 0' }}>
-              <label htmlFor="task-file" style={{ display: 'block', marginBottom: '5px' }}>
+            <div className="file-upload-section" style={{ margin: "10px 0" }}>
+              <label
+                htmlFor="task-file"
+                style={{ display: "block", marginBottom: "5px" }}
+              >
                 Attach file (optional):
               </label>
               <input
@@ -492,18 +501,19 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                     setForm({ ...form, file });
                   }
                 }}
-                style={{ marginBottom: '10px' }}
+                style={{ marginBottom: "10px" }}
               />
               {form.file && (
-                <div style={{ fontSize: '14px', color: '#666' }}>
-                  Selected: {form.file.name} ({(form.file.size / 1024 / 1024).toFixed(2)} MB)
+                <div style={{ fontSize: "14px", color: "#666" }}>
+                  Selected: {form.file.name} (
+                  {(form.file.size / 1024 / 1024).toFixed(2)} MB)
                 </div>
               )}
             </div>
           )}
           {/* Submit button with dynamic text */}
           <button type="submit">{editing ? "Update" : "Add"} Task</button>
-          
+
           {/* Cancel button - only shows when editing */}
           {editing && (
             <button
@@ -525,23 +535,29 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
         </form>
       ) : (
         <div className="paywall-message">
-          <p>Task creation is disabled. Please upgrade your account to continue.</p>
+          <p>
+            Task creation is disabled. Please upgrade your account to continue.
+          </p>
         </div>
       )}
-      
+
       {/* Error display */}
       {error && <div className="error">{error}</div>}
-      
+
       {/* Upload error display */}
-      {uploadError && <div className="error" style={{ marginTop: "10px" }}>{uploadError}</div>}
-      
+      {uploadError && (
+        <div className="error" style={{ marginTop: "10px" }}>
+          {uploadError}
+        </div>
+      )}
+
       {/* Dynamic task list title based on filter */}
       <h3 className="dtl-title">
         {filter === "all" && "All Tasks"}
         {filter === "dueSoon" && "Due Soon"}
         {filter === "completed" && "Completed"}
       </h3>
-      
+
       {/* Task list or loading state */}
       {loading ? (
         <div>Loading...</div>
@@ -557,7 +573,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                 onChange={async (e) => {
                   // Convert boolean to integer for API compatibility
                   const completed = e.target.checked ? 1 : 0;
-                  
+
                   // Optimistic update: update UI immediately
                   // Parameter chain: checkbox state -> API call -> local state update
                   await fetch(`/api/tasks/${task.id}`, {
@@ -566,7 +582,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                     credentials: "include",
                     body: JSON.stringify({ completed: e.target.checked }),
                   });
-                  
+
                   // Update local state to reflect change
                   setTasks((prev) =>
                     prev.map((t) =>
@@ -575,15 +591,17 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                   );
                 }}
               />
-              
+
               {/* Due date display */}
               <span className="dcat-lab">
-                Due: {" "}
+                Due:{" "}
                 {task.due_date &&
-                  new Date(task.due_date).toLocaleDateString("en-US", { timeZone: 'UTC' })}{" "}
+                  new Date(task.due_date).toLocaleDateString("en-US", {
+                    timeZone: "UTC",
+                  })}{" "}
               </span>
               <br />
-              
+
               {/* Task title with strikethrough for completed tasks */}
               <strong
                 className="task"
@@ -594,7 +612,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                 Task: {task.title}
               </strong>
               <br />
-              
+
               {/* Conditional description display */}
               {task.description && (
                 <span className="desc">
@@ -602,12 +620,14 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                   <br />
                 </span>
               )}
-              
+
               {/* Media files display */}
               {mediaFiles[task.id] && mediaFiles[task.id].length > 0 && (
                 <div className="media-container" style={{ margin: "10px 0" }}>
                   <strong>Media:</strong>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}
+                  >
                     {mediaFiles[task.id].map((media) => (
                       <div key={media.id} style={{ position: "relative" }}>
                         {renderMediaFile(media)}
@@ -634,7 +654,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                   </div>
                 </div>
               )}
-              
+
               {/* File upload */}
               <div className="upload-section" style={{ margin: "10px 0" }}>
                 <input
@@ -649,10 +669,12 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
                   disabled={uploading}
                   style={{ margin: "5px 0" }}
                 />
-                {uploading && <span style={{ marginLeft: "10px" }}>Uploading...</span>}
+                {uploading && (
+                  <span style={{ marginLeft: "10px" }}>Uploading...</span>
+                )}
               </div>
               <br />
-              
+
               {/* Action buttons */}
               <span className="d-btn-span">
                 <button onClick={() => handleEdit(task)}>Edit</button>
@@ -662,7 +684,7 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
           ))}
         </ul>
       )}
-      
+
       {/* Logout button */}
       <button className="dlog-btn" onClick={onLogout}>
         Logout

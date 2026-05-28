@@ -51,7 +51,9 @@ const Task = {
   async countByUser(user_id) {
     const [rows] = await db
       .promise()
-      .query("SELECT COUNT(*) AS total FROM tasks WHERE user_id = ?", [user_id]);
+      .query("SELECT COUNT(*) AS total FROM tasks WHERE user_id = ?", [
+        user_id,
+      ]);
 
     return Number(rows[0]?.total || 0);
   },
@@ -83,17 +85,17 @@ const Task = {
     // Extract field names and values from the fields object
     const keys = Object.keys(fields);
     const values = Object.values(fields);
-    
+
     // If no fields provided, nothing to update
     if (!keys.length) return false;
-    
+
     // Create the SET clause for the SQL query (e.g., "title = ?, completed = ?")
     const setClause = keys.map((k) => `${k} = ?`).join(", ");
-    
+
     // Add the task ID and user ID to the values array for the WHERE clause
     // This completes the parameter chain: [field1, field2, ..., id, user_id]
     values.push(id, user_id);
-    
+
     // Execute SQL UPDATE query to modify the task
     // The setClause dynamically sets which fields to update
     // Parameter chain flows: fields object -> values array -> SQL query
@@ -103,7 +105,7 @@ const Task = {
         `UPDATE tasks SET ${setClause}, updated_at = NOW() WHERE id = ? AND user_id = ?`,
         values,
       );
-    
+
     // Return true if at least one row was affected (task was updated)
     return result.affectedRows > 0;
   },
@@ -120,7 +122,7 @@ const Task = {
     const [result] = await db
       .promise()
       .query("DELETE FROM tasks WHERE id = ? AND user_id = ?", [id, user_id]);
-    
+
     // Return true if at least one row was affected (task was deleted)
     return result.affectedRows > 0;
   },
