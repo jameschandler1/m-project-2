@@ -81,13 +81,15 @@ const dbConfig = {
   database: process.env.DB_NAME,
 };
 
-const API_BASE_URL =
-  process.env.API_BASE_URL || `http://localhost:${process.env.PORT}`;
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:4000";
 const API_FETCH_REQUESTS = Number.parseInt(
   process.env.API_FETCH_REQUESTS || "1",
   10,
 );
 const API_SESSION_COOKIE = process.env.API_SESSION_COOKIE || "";
+const runApiBenchmark =
+  process.env.RUN_API_BENCHMARK === "true" ||
+  process.argv.includes("--benchmark");
 // ----------------------------------------
 
 const categories = [
@@ -317,23 +319,7 @@ async function benchmarkTaskFetch() {
   );
 }
 
-async function main() {
-  await loadFaker();
-  const connection = await mysql.createConnection(dbConfig);
-
-  console.log("Connected to MySQL.");
-
-  const [userRows] = await connection.query("SELECT id FROM user");
-  existingUserIds.push(...userRows.map((row) => row.id));
-
-  if (existingUserIds.length === 0) {
-    throw new Error(
-      "No users found in the user table. Seed at least one user before generating tasks.",
-    );
-  }
-
-  console.log(`Loaded ${existingUserIds.length} user IDs for task generation.`);
-
+async function seedTasks(connection) {
   const batchSize = 1000;
   let insertedRows = 0;
 
@@ -358,14 +344,42 @@ async function main() {
     );
   }
 
+  return insertedRows;
+}
+
+async function main() {
+  await loadFaker();
+  const connection = await mysql.createConnection(dbConfig);
+
+  console.log("Connected to MySQL.");
+
+  const [userRows] = await connection.query("SELECT id FROM user");
+  existingUserIds.push(...userRows.map((row) => row.id));
+
+  if (existingUserIds.length === 0) {
+    throw new Error(
+      "No users found in the user table. Seed at least one user before generating tasks.",
+    );
+  }
+
+  console.log(`Loaded ${existingUserIds.length} user IDs for task generation.`);
+
+  const insertedRows = await seedTasks(connection);
+
   await connection.end();
 
   console.log(`Seed complete: ${insertedRows} rows inserted into tasks.`);
 
-  try {
-    await benchmarkTaskFetch();
-  } catch (error) {
-    console.error("API fetch benchmark failed:", error.message);
+  if (runApiBenchmark) {
+    try {
+      await benchmarkTaskFetch();
+    } catch (error) {
+      console.error("API fetch benchmark failed:", error.message);
+    }
+  } else {
+    console.log(
+      "API benchmark skipped. Set RUN_API_BENCHMARK=true or pass --benchmark to measure fetching.",
+    );
   }
 
   console.log("Done seeding realistic task data.");
