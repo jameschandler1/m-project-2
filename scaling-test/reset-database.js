@@ -42,6 +42,22 @@ if (!resetUserPassword) {
   throw new Error("Missing required --password argument.");
 }
 
+async function logTableContents(tableName, label, orderByClause = null) {
+  const orderBy = orderByClause ? ` ORDER BY ${orderByClause}` : "";
+  const [rows] = await db
+    .promise()
+    .query(`SELECT * FROM ${tableName}${orderBy}`);
+
+  console.log(`Table contents for ${label} (${rows.length} rows):`);
+
+  if (rows.length === 0) {
+    console.log("No rows returned.");
+    return;
+  }
+
+  console.table(rows);
+}
+
 async function resetDatabase() {
   console.log("Connected to the configured database.");
   console.log(`Reset target user: ${resetUserEmail}`);
@@ -76,6 +92,11 @@ async function resetDatabase() {
       `Created reset user id ${insertResult.insertId} for ${resetUserEmail}`,
     );
     console.log(`Remaining users after reset: ${userCountRow.userCount}`);
+
+    await logTableContents("media", "media");
+    await logTableContents("tasks", "tasks");
+    await logTableContents("user", "user", "id");
+
     console.log("Database reset complete.");
   } finally {
     await db.end();
