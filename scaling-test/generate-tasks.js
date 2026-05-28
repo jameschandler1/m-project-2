@@ -214,6 +214,22 @@ function createTask() {
   ];
 }
 
+function normalizeSessionCookie(sessionCookieValue) {
+  if (!sessionCookieValue) {
+    return "";
+  }
+
+  const [cookieName, ...restParts] = sessionCookieValue.split("=");
+  const rawCookieValue = restParts.join("=");
+
+  if (!cookieName || !rawCookieValue) {
+    return sessionCookieValue;
+  }
+
+  const decodedCookieValue = decodeURIComponent(rawCookieValue);
+  return `${cookieName}=${decodedCookieValue}`;
+}
+
 async function benchmarkTaskFetch() {
   if (!API_BASE_URL) {
     console.log(
@@ -226,9 +242,10 @@ async function benchmarkTaskFetch() {
   const fetchHeaders = {};
 
   if (API_SESSION_COOKIE) {
-    fetchHeaders.Cookie = API_SESSION_COOKIE;
+    const normalizedCookie = normalizeSessionCookie(API_SESSION_COOKIE);
+    fetchHeaders.Cookie = normalizedCookie;
     console.log(
-      "Using provided API_SESSION_COOKIE for authenticated benchmark requests.",
+      `Using provided API_SESSION_COOKIE for authenticated benchmark requests: ${normalizedCookie}`,
     );
   } else {
     console.warn(
