@@ -1,8 +1,9 @@
 # Scaling Test Dataset Generator
 
-This directory contains a Node.js script that generates **10,000 realistic rows** for the `tasks` table in the `taskapp` MySQL database.
+This directory contains a Node.js script that generates **10,000 realistic rows** for the `tasks` table in the configured MySQL database.
 
 The generated data is designed to look believable and useful for:
+
 - scaling tests
 - pagination testing
 - search/filter testing
@@ -10,6 +11,7 @@ The generated data is designed to look believable and useful for:
 - performance benchmarking
 
 The task data includes:
+
 - realistic titles
 - varied descriptions
 - multiple categories
@@ -19,6 +21,7 @@ The task data includes:
 - multiple user IDs
 
 The schema was based on the uploaded task model:
+
 - `tasks.user_id`
 - `tasks.title`
 - `tasks.description`
@@ -28,6 +31,7 @@ The schema was based on the uploaded task model:
 - `tasks.updated_at`
 
 Referenced model files:
+
 - task.js
 - user.js
 - media.js
@@ -44,27 +48,9 @@ npm install mysql2 @faker-js/faker
 
 ---
 
-## Environment Variables
+## Configuration
 
-The script supports environment variables for database credentials.
-
-### macOS / Linux
-
-```bash
-export DB_HOST=localhost
-export DB_USER=root
-export DB_PASSWORD=yourpassword
-export DB_NAME=taskapp
-```
-
-### Windows (PowerShell)
-
-```powershell
-$env:DB_HOST="localhost"
-$env:DB_USER="root"
-$env:DB_PASSWORD="yourpassword"
-$env:DB_NAME="taskapp"
-```
+Database settings are read from the shared backend environment file. Keep the project-specific values in `backend/.env` and let the scripts load them.
 
 ---
 
@@ -74,13 +60,30 @@ $env:DB_NAME="taskapp"
 node generate-tasks.js
 ```
 
+## Reset the Database
+
+The reset utility reads database settings from the shared backend environment file and expects the seeded account details to be supplied explicitly.
+
+```bash
+node reset-database.js --email "<seed email>" --password "<password>"
+```
+
+The script will:
+
+- clear `media`
+- clear `tasks`
+- clear `user`
+- recreate one user with a hashed password
+
 ---
 
 ## Notes
 
 ### Important
+
 The script assumes:
-- the `taskapp` database already exists
+
+- the configured database already exists
 - the `tasks` table already exists
 - user IDs already exist in the `user` table
 
@@ -112,6 +115,7 @@ const userId = faker.number.int({ min: 1, max: 250 });
 ## Performance Tips
 
 For faster inserts:
+
 - temporarily disable indexes during large imports
 - increase MySQL packet size if necessary
 - use SSD-backed storage
