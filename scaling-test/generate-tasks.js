@@ -193,6 +193,7 @@ async function main() {
   console.log("Connected to MySQL.");
 
   const batchSize = 1000;
+  let insertedRows = 0;
 
   for (let i = 0; i < TOTAL_ROWS; i += batchSize) {
     const batch = [];
@@ -209,11 +210,15 @@ async function main() {
 
     await connection.query(query, [batch]);
 
-    console.log(`Inserted ${i + batch.length} / ${TOTAL_ROWS} rows`);
+    insertedRows += batch.length;
+    console.log(
+      `Batch inserted: ${batch.length} rows (total inserted: ${insertedRows}/${TOTAL_ROWS})`,
+    );
   }
 
   await connection.end();
 
+  console.log(`Seed complete: ${insertedRows} rows inserted into tasks.`);
   console.log("Done seeding realistic task data.");
 }
 
