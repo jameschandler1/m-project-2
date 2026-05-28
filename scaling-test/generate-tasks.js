@@ -171,6 +171,8 @@ function randomDate(startDaysAgo = 180, futureDays = 120) {
   return faker.date.between({ from: start, to: end });
 }
 
+const existingUserIds = [];
+
 function createTask() {
   const prefix = faker.helpers.arrayElement(taskPrefixes);
   const object = faker.helpers.arrayElement(taskObjects);
@@ -192,8 +194,13 @@ function createTask() {
 
   const updatedAt = randomDate();
 
-  // assumes users already exist in DB
-  const userId = faker.number.int({ min: 1, max: 250 });
+  if (existingUserIds.length === 0) {
+    throw new Error(
+      "No existing user IDs available to assign generated tasks.",
+    );
+  }
+
+  const userId = faker.helpers.arrayElement(existingUserIds);
 
   return [
     userId,
@@ -283,6 +290,17 @@ async function main() {
   const connection = await mysql.createConnection(dbConfig);
 
   console.log("Connected to MySQL.");
+
+  const [userRows] = await connection.query("SELECT id FROM user");
+  existingUserIds.push(...userRows.map((row) => row.id));
+
+  if (existingUserIds.length === 0) {
+    throw new Error(
+      "No users found in the user table. Seed at least one user before generating tasks.",
+    );
+  }
+
+  console.log(`Loaded ${existingUserIds.length} user IDs for task generation.`);
 
   const batchSize = 1000;
   let insertedRows = 0;
