@@ -81,7 +81,8 @@ const dbConfig = {
   database: process.env.DB_NAME,
 };
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL =
+  process.env.API_BASE_URL || `http://localhost:${process.env.PORT}`;
 const API_FETCH_REQUESTS = Number.parseInt(
   process.env.API_FETCH_REQUESTS || "1",
   10,
