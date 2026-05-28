@@ -19,7 +19,8 @@ const fs = require("fs");
 const path = require("path");
 const { performance } = require("node:perf_hooks");
 const mysql = require("mysql2/promise");
-const { faker } = require("@faker-js/faker");
+
+let faker;
 
 const envPath = path.resolve(__dirname, "..", "backend", ".env");
 
@@ -150,6 +151,16 @@ const taskObjects = [
   "studio session",
 ];
 
+async function loadFaker() {
+  if (faker) {
+    return faker;
+  }
+
+  const fakerModule = await import("@faker-js/faker");
+  faker = fakerModule.faker;
+  return faker;
+}
+
 function randomDate(startDaysAgo = 180, futureDays = 120) {
   const start = new Date();
   start.setDate(start.getDate() - startDaysAgo);
@@ -268,6 +279,7 @@ async function benchmarkTaskFetch() {
 }
 
 async function main() {
+  await loadFaker();
   const connection = await mysql.createConnection(dbConfig);
 
   console.log("Connected to MySQL.");
