@@ -39,6 +39,13 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   // UI state management
   const [editing, setEditing] = useState(null); // task id being edited
   const [filter, setFilter] = useState("all"); // Filter state
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
+  });
   
   // Media upload state
   const [mediaFiles, setMediaFiles] = useState({}); // media files per task
@@ -80,36 +87,51 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   });
 
 
+  const loadTasks = async (targetPage = page) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/tasks?page=${targetPage}&limit=50`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setTasks(data);
+        setPagination((currentPagination) => ({
+          ...currentPagination,
+          page: targetPage,
+          total: data.length,
+          totalPages: 1,
+        }));
+      } else if (data?.tasks) {
+        setTasks(Array.isArray(data.tasks) ? data.tasks : []);
+        setPagination({
+          page: data.pagination?.page || targetPage,
+          limit: data.pagination?.limit || 50,
+          total: data.pagination?.total || 0,
+          totalPages: data.pagination?.totalPages || 1,
+        });
+      } else if (data?.error) {
+        setError(data.error);
+        setTasks([]);
+      } else {
+        setTasks([]);
+      }
+    } catch (err) {
+      setError("Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /**
-   * Fetch tasks from API on component mount
-   * 
-   * This useEffect runs once when component mounts to load
-   * the user's tasks from the backend API.
-   * 
-   * API Call Chain:
-   * - GET /api/tasks with session credentials
-   * - Parse JSON response
-   * - Handle success (array) or error (object)
-   * - Update component state accordingly
+   * Fetch tasks from API whenever the page changes.
    */
   useEffect(() => {
-    fetch("/api/tasks", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        // Defensive programming: ensure we always set an array
-        if (Array.isArray(data)) {
-          setTasks(data);
-        } else if (data.error) {
-          setError(data.error);
-          setTasks([]);
-        } else {
-          // Fallback: unexpected response format
-          setTasks([]);
-        }
-      })
-      .catch(() => setError("Failed to load tasks"))
-      .finally(() => setLoading(false));
-  }, []); // Empty dependency array = run once on mount
+    loadTasks(page);
+  }, [page]);
 
   /**
    * Fetch media files for a specific task
@@ -207,12 +229,12 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
       // Reset form state after successful save
       setForm({ title: "", description: "", due_date: "", file: null });
       setEditing(null);
-      
-      // Refresh tasks from server to get latest data
-      const updated = await fetch("/api/tasks", {
-        credentials: "include",
-      }).then((r) => r.json());
-      setTasks(Array.isArray(updated) ? updated : []);
+      if (!editing) {
+        setPage(1);
+        await loadTasks(1);
+      } else {
+        await loadTasks(page);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -352,8 +374,8 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
       method: "DELETE",
       credentials: "include",
     });
-    // Update local state immediately (optimistic update)
-    setTasks(tasks.filter((t) => t.id !== id));
+
+    await loadTasks(page);
   };
 
   /**
@@ -408,6 +430,24 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
           onClick={() => setFilter("completed")}
         >
           Completed
+        </button>
+      </div>
+
+      <div className="pagination-controls">
+        <button
+          onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+          disabled={pagination.page <= 1}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination.page} of {pagination.totalPages} ({pagination.total} total tasks)
+        </span>
+        <button
+          onClick={() => setPage((currentPage) => Math.min(pagination.totalPages, currentPage + 1))}
+          disabled={pagination.page >= pagination.totalPages}
+        >
+          Next
         </button>
       </div>
       

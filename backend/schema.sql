@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   
   -- Performance optimization index
   -- Speeds up queries filtering tasks by user_id (common operation)
-  INDEX idx_user_id (user_id)
+  INDEX idx_user_id (user_id),
+  -- Supports paginated task lists ordered by due date for each user
+  INDEX idx_user_id_due_date_id (user_id, due_date, id)
 );
 
 -- =====================================================

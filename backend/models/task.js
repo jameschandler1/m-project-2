@@ -25,20 +25,35 @@ const Task = {
   },
 
   /**
-   * Get all tasks belonging to a specific user
+   * Get a paginated slice of tasks belonging to a specific user
    * @param {number} user_id - The ID of the user whose tasks we want to retrieve
-   * @returns {Array} Array of task objects belonging to the user, sorted by due date
+   * @param {number} page - One-based page number
+   * @param {number} limit - Number of rows to fetch per page
+   * @returns {Array} Array of task objects for the requested page, sorted by due date
    */
-  async findAllByUser(user_id) {
-    // Execute SQL SELECT query to get all tasks for a specific user
-    // ORDER BY due_date sorts tasks chronologically
+  async findAllByUser(user_id, { page = 1, limit = 50 } = {}) {
+    const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
+    const safeLimit = Math.max(1, Number.parseInt(limit, 10) || 50);
+    const offset = (safePage - 1) * safeLimit;
+
+    // Execute SQL SELECT query to get a paginated slice of tasks for a specific user
+    // ORDER BY due_date, id keeps pagination deterministic and index-friendly
     const [rows] = await db
       .promise()
-      .query("SELECT * FROM tasks WHERE user_id = ? ORDER BY due_date", [
-        user_id,
-      ]);
-    // Return the array of tasks
+      .query(
+        "SELECT * FROM tasks WHERE user_id = ? ORDER BY due_date, id LIMIT ? OFFSET ?",
+        [user_id, safeLimit, offset],
+      );
+
     return rows;
+  },
+
+  async countByUser(user_id) {
+    const [rows] = await db
+      .promise()
+      .query("SELECT COUNT(*) AS total FROM tasks WHERE user_id = ?", [user_id]);
+
+    return Number(rows[0]?.total || 0);
   },
 
   /**

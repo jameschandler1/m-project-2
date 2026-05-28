@@ -57,7 +57,9 @@ async function generateTasks() {
   );
 
   try {
-    const [userRows] = await db.promise().query("SELECT id FROM user ORDER BY id");
+    const [userRows] = await db
+      .promise()
+      .query("SELECT id FROM user ORDER BY id");
 
     if (userRows.length === 0) {
       console.error(
@@ -78,7 +80,14 @@ async function generateTasks() {
       const category = categories[index % categories.length];
       const completed = index % 5 === 0 ? 1 : 0;
 
-      taskRows.push([userId, title, description, dueDate.toISOString().split("T")[0], category, completed]);
+      taskRows.push([
+        userId,
+        title,
+        description,
+        dueDate.toISOString().split("T")[0],
+        category,
+        completed,
+      ]);
     }
 
     const start = Date.now();

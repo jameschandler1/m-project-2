@@ -24,18 +24,39 @@ const router = express.Router();
 router.use(auth);
 
 /**
- * Get all tasks for the authenticated user
+ * Get paginated tasks for the authenticated user
  * 
- * GET /api/tasks
+ * GET /api/tasks?page=1&limit=50
  * 
  * Response:
- * - 200: Array of task objects belonging to the user
+ * - 200: Paginated task payload with rows and pagination metadata
  * - 500: Server error
  */
 router.get("/", async (req, res) => {
   // Get user ID from session (set by auth middleware)
-  const tasks = await Task.findAllByUser(req.session.userId);
-  res.json(tasks);
+  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100);
+
+  const total = await Task.countByUser(req.session.userId);
+  const totalPages = Math.max(Math.ceil(total / limit), 1);
+  const safePage = Math.min(page, totalPages);
+
+  const tasks = await Task.findAllByUser(req.session.userId, {
+    page: safePage,
+    limit,
+  });
+
+  res.json({
+    tasks,
+    pagination: {
+      page: safePage,
+      limit,
+      total,
+      totalPages,
+      hasNext: safePage < totalPages,
+      hasPrev: safePage > 1,
+    },
+  });
 });
 
 /**
