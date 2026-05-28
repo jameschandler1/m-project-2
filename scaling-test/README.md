@@ -62,10 +62,10 @@ node generate-tasks.js
 
 ## Reset the Database
 
-The reset utility reads database settings from the shared backend environment file and expects the seeded account details to be supplied explicitly.
+The reset utility reads database settings from the shared backend environment file and clears the seeded tables without requiring extra runtime credentials.
 
 ```bash
-node reset-database.js --email "<seed email>" --password "<password>"
+node reset-database.js
 ```
 
 The script will:
@@ -73,7 +73,7 @@ The script will:
 - clear `media`
 - clear `tasks`
 - clear `user`
-- recreate one user with a hashed password
+- print the resulting table contents so you can confirm they are empty
 
 ---
 
