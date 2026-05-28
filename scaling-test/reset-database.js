@@ -1,9 +1,10 @@
 const path = require("path");
 const dotenv = require("dotenv");
-const db = require("../backend/db");
 
 const envPath = path.resolve(__dirname, "..", "backend", ".env");
 dotenv.config({ path: envPath });
+
+const db = require("../backend/db");
 
 async function logTableContents(tableName, label, orderByClause = null) {
   const orderBy = orderByClause ? ` ORDER BY ${orderByClause}` : "";
