@@ -116,7 +116,6 @@ npm run dev     # Solid.js frontend on http://localhost:3001
 ```bash
 npm start          # Start Node.js backend only
 npm run server     # Start Node.js backend
-npm run client     # Start React frontend
 npm run dev        # Start both Node.js backend and React frontend concurrently
 npm run dev-solid  # Start both Node.js backend and Solid.js frontend concurrently
 npm run solid      # Start Solid.js frontend only
