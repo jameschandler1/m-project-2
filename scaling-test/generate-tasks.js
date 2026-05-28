@@ -227,6 +227,13 @@ async function benchmarkTaskFetch() {
 
   if (API_SESSION_COOKIE) {
     fetchHeaders.Cookie = API_SESSION_COOKIE;
+    console.log(
+      "Using provided API_SESSION_COOKIE for authenticated benchmark requests.",
+    );
+  } else {
+    console.warn(
+      "API benchmark is unauthenticated. /api/tasks requires a valid session cookie; set API_SESSION_COOKIE to benchmark authenticated fetches.",
+    );
   }
 
   const benchmarkRequests = Number.isFinite(API_FETCH_REQUESTS)
@@ -260,6 +267,13 @@ async function benchmarkTaskFetch() {
 
     if (!response.ok) {
       const responseBody = await response.text();
+
+      if (response.status === 401) {
+        throw new Error(
+          `API fetch benchmark failed with status ${response.status}: ${responseBody}. The benchmark requires an authenticated session cookie. Set API_SESSION_COOKIE to a valid session value before retrying.`,
+        );
+      }
+
       throw new Error(
         `API fetch benchmark failed with status ${response.status}: ${responseBody}`,
       );
