@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
 const { performance } = require("node:perf_hooks");
-const db = require("../backend/db");
 
 const envPath = path.resolve(__dirname, "..", "backend", ".env");
 
@@ -11,6 +10,8 @@ if (!fs.existsSync(envPath)) {
 }
 
 dotenv.config({ path: envPath });
+
+const db = require("../backend/db");
 
 const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);

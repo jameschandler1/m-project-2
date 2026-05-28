@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
-const db = require("../backend/db");
 
 const envPath = path.resolve(__dirname, "..", "backend", ".env");
 
@@ -10,6 +9,8 @@ if (!fs.existsSync(envPath)) {
 }
 
 dotenv.config({ path: envPath });
+
+const db = require("../backend/db");
 
 const TOTAL_ROWS = 10000;
 const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
