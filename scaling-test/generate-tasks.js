@@ -17,6 +17,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { performance } = require("node:perf_hooks");
 const mysql = require("mysql2/promise");
 const { faker } = require("@faker-js/faker");
 
@@ -78,6 +79,13 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 };
+
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
+const API_FETCH_REQUESTS = Number.parseInt(
+  process.env.API_FETCH_REQUESTS || "1",
+  10,
+);
+const API_SESSION_COOKIE = process.env.API_SESSION_COOKIE || "";
 // ----------------------------------------
 
 const categories = [
@@ -187,6 +195,78 @@ function createTask() {
   ];
 }
 
+async function benchmarkTaskFetch() {
+  if (!API_BASE_URL) {
+    console.log(
+      "API benchmark skipped because API_BASE_URL is not configured.",
+    );
+    return;
+  }
+
+  const fetchUrl = `${API_BASE_URL.replace(/\/$/, "")}/api/tasks`;
+  const fetchHeaders = {};
+
+  if (API_SESSION_COOKIE) {
+    fetchHeaders.Cookie = API_SESSION_COOKIE;
+  }
+
+  const benchmarkRequests = Number.isFinite(API_FETCH_REQUESTS)
+    ? Math.max(1, API_FETCH_REQUESTS)
+    : 1;
+
+  console.log(
+    `Benchmarking ${benchmarkRequests} fetch(es) against ${fetchUrl}`,
+  );
+
+  const startTime = new Date();
+  const benchmarkStart = performance.now();
+
+  let totalDuration = 0;
+  let totalTaskCount = 0;
+
+  for (
+    let requestIndex = 0;
+    requestIndex < benchmarkRequests;
+    requestIndex += 1
+  ) {
+    const requestStart = performance.now();
+
+    const response = await fetch(fetchUrl, {
+      method: "GET",
+      headers: fetchHeaders,
+    });
+
+    const requestElapsed = performance.now() - requestStart;
+    totalDuration += requestElapsed;
+
+    if (!response.ok) {
+      const responseBody = await response.text();
+      throw new Error(
+        `API fetch benchmark failed with status ${response.status}: ${responseBody}`,
+      );
+    }
+
+    const tasks = await response.json();
+    totalTaskCount = tasks.length;
+
+    console.log(
+      `Fetch request ${requestIndex + 1}/${benchmarkRequests}: ${tasks.length} tasks returned in ${requestElapsed.toFixed(2)}ms`,
+    );
+  }
+
+  const endTime = new Date();
+  const elapsed = performance.now() - benchmarkStart;
+  const average = elapsed / benchmarkRequests;
+
+  console.log(`API fetch benchmark start time: ${startTime.toISOString()}`);
+  console.log(`API fetch benchmark end time: ${endTime.toISOString()}`);
+  console.log(`API fetch benchmark elapsed: ${elapsed.toFixed(2)}ms`);
+  console.log(`Average time per fetch request: ${average.toFixed(2)}ms`);
+  console.log(
+    `API fetch benchmark summary: ${benchmarkRequests} request(s), ${totalTaskCount} tasks returned, ${totalDuration.toFixed(2)}ms total fetch time`,
+  );
+}
+
 async function main() {
   const connection = await mysql.createConnection(dbConfig);
 
@@ -219,6 +299,13 @@ async function main() {
   await connection.end();
 
   console.log(`Seed complete: ${insertedRows} rows inserted into tasks.`);
+
+  try {
+    await benchmarkTaskFetch();
+  } catch (error) {
+    console.error("API fetch benchmark failed:", error.message);
+  }
+
   console.log("Done seeding realistic task data.");
 }
 
