@@ -109,6 +109,43 @@
   border-radius: 4px;
 }
 
+.payment-status-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.payment-status-message h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.payment-status-message p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.payment-status-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.payment-status-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-status-actions .payment-submit-button,
+.payment-status-actions .payment-logout-button {
+  flex: 1;
+  width: auto;
+}
+
 .payment-submit-button {
   width: 100%;
   padding: 12px;

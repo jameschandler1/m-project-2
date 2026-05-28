@@ -1,10 +1,10 @@
 /**
  * Main Application Component
- * 
+ *
  * This is the root component of the React application that manages
  * authentication state and renders either the Login or Dashboard
  * component based on whether a user is authenticated.
- * 
+ *
  * Authentication Flow:
  * 1. App starts with user state as null
  * 2. Login component handles authentication and calls onAuth with user data
@@ -21,78 +21,76 @@ function App() {
   // State management for user authentication
   // user: null (not logged in) or user object (logged in)
   const [user, setUser] = useState(null);
-  
+
   // Payment status state
   const [paymentStatus, setPaymentStatus] = useState({
-    paymentStatus: 'free',
+    paymentStatus: "free",
     tasksCreated: 0,
     freeTasksRemaining: 3,
     isPaywalled: false,
   });
-  
+
   // State to control whether to show payment page
   const [showPayment, setShowPayment] = useState(false);
 
-   useEffect(() => {
-  fetch("/api/auth/me", {
-    credentials: "include",
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Not authenticated");
-      }
-      return res.json();
+  useEffect(() => {
+    fetch("/api/auth/me", {
+      credentials: "include",
     })
-    .then((userData) => {
-      setUser(userData);
-    })
-    .catch(() => {
-      setUser(null);
-    });
-}, []); 
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Not authenticated");
+        }
+        return res.json();
+      })
+      .then((userData) => {
+        setUser(userData);
+      })
+      .catch(() => {
+        setUser(null);
+      });
+  }, []);
 
   const refreshPaymentStatus = () => {
-  fetch("/api/payment/status", {
-    credentials: "include",
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      setPaymentStatus(data);
-
-      if (data.isPaywalled) {
-        setShowPayment(true);
-      } else {
-        setShowPayment(false);
-      }
+    fetch("/api/payment/status", {
+      credentials: "include",
     })
-    .catch(() => {
-      setPaymentStatus({
-        paymentStatus: "free",
-        tasksCreated: 0,
-        freeTasksRemaining: 3,
-        isPaywalled: false,
-      });
-      setShowPayment(false);
-    });
-};
+      .then((res) => res.json())
+      .then((data) => {
+        setPaymentStatus(data);
 
- 
+        if (data.isPaywalled) {
+          setShowPayment(true);
+        } else {
+          setShowPayment(false);
+        }
+      })
+      .catch(() => {
+        setPaymentStatus({
+          paymentStatus: "free",
+          tasksCreated: 0,
+          freeTasksRemaining: 3,
+          isPaywalled: false,
+        });
+        setShowPayment(false);
+      });
+  };
 
   /**
    * Fetch payment status when user changes
    */
   useEffect(() => {
-  if (user) {
-    refreshPaymentStatus();
-  }
-}, [user]);
+    if (user) {
+      refreshPaymentStatus();
+    }
+  }, [user]);
 
   /**
    * Handle user logout
-   * 
+   *
    * This function calls the logout API endpoint and clears the
    * user state, which causes the app to render the Login component.
-   * 
+   *
    * API Call Chain:
    * - POST /api/auth/logout with credentials
    * - Clear user state on success
@@ -110,44 +108,48 @@ function App() {
 
   /**
    * Handle payment success
-   * 
+   *
    * This function is called when payment succeeds.
    * It refreshes the payment status and hides the payment page.
    */
-  const handlePaymentSuccess = () => {
-  fetch("/api/payment/status", {
-    credentials: "include",
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      setPaymentStatus(data);
-
-      // Only hide payment screen if user is truly paid
-      if (!data.isPaywalled) {
-        setShowPayment(false);
-      } else {
-        setShowPayment(true);
-      }
+  const handleClosePayment = () => {
+    fetch("/api/payment/status", {
+      credentials: "include",
     })
-    .catch((err) => {
-      console.error("Failed to refresh payment status:", err);
-    });
-};
+      .then((res) => res.json())
+      .then((data) => {
+        setPaymentStatus(data);
+        setShowPayment(false);
+      })
+      .catch((err) => {
+        console.error("Failed to refresh payment status:", err);
+        setShowPayment(false);
+      });
+  };
+
+  /**
+   * Handle payment success
+   *
+   * This callback is kept in place for upstream integrations.
+   * The payment view now handles explicit user confirmation through its own close action.
+   */
+  const handlePaymentSuccess = () => {
+    refreshPaymentStatus();
+  };
 
   /**
    * Handle payment failure
-   * 
+   *
    * This function is called when payment fails.
-   * It keeps the payment page visible so the user can try again.
+   * It keeps the payment page visible so the user can retry or cancel.
    */
   const handlePaymentFailure = (errorMessage) => {
     console.error("Payment failed:", errorMessage);
-    // Keep payment page visible for retry
   };
 
   /**
    * Render logic based on authentication state
-   * 
+   *
    * Conditional rendering flow:
    * - If user is null: Show Login component
    * - If user exists and paywalled: Show Payment component
@@ -160,19 +162,20 @@ function App() {
         <Login onAuth={setUser} />
       ) : showPayment ? (
         // User authenticated but paywalled - show payment page
-        <Payment 
+        <Payment
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentFailure={handlePaymentFailure}
           onLogout={handleLogout}
+          onClose={handleClosePayment}
         />
       ) : (
         // User authenticated and not paywalled - show dashboard
         <Dashboard
-  user={user}
-  onLogout={handleLogout}
-  paymentStatus={paymentStatus}
-  onTaskCreated={refreshPaymentStatus}
-/>
+          user={user}
+          onLogout={handleLogout}
+          paymentStatus={paymentStatus}
+          onTaskCreated={refreshPaymentStatus}
+        />
       )}
     </div>
   );

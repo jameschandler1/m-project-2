@@ -2,43 +2,46 @@
  * @fileoverview Payment component for Stripe integration
  * @description Handles Stripe payment flow using Stripe Elements.
  * Displays a payment form where users can enter card details.
- * 
+ *
  * @component Payment
  * @param {Object} props - Component props
  * @param {Function} props.onPaymentSuccess - Callback function when payment succeeds
  * @param {Function} props.onPaymentFailure - Callback function when payment fails
  * @param {Function} props.onLogout - Function to handle user logout
- * 
+ *
  * @author Generated
  * @since 1.0.0
  */
-import { createSignal, onMount } from 'solid-js';
-import { loadStripe } from '@stripe/stripe-js';
+import { createSignal, onMount } from "solid-js";
+import { loadStripe } from "@stripe/stripe-js";
 
 // Initialize Stripe with your publishable key
 // In production, this should come from environment variables
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_stripe_publishable_key_here');
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+    "pk_test_your_stripe_publishable_key_here",
+);
 
 /**
  * Payment component - Stripe payment form
- * 
+ *
  * Provides a payment interface using Stripe Elements for secure card input.
  * Handles payment intent creation and confirmation.
- * 
+ *
  * @param {Object} props - Component properties
- * @param {Function} props.onPaymentSuccess - Callback when payment completes successfully
  * @param {Function} props.onPaymentFailure - Callback when payment fails
  * @param {Function} props.onLogout - Function to handle user logout
+ * @param {Function} props.onClose - Function to dismiss the payment overlay and return to dashboard
  * @returns {JSX.Element} Rendered payment component
  */
 function Payment(props) {
-  const [clientSecret, setClientSecret] = createSignal('');
+  const [clientSecret, setClientSecret] = createSignal("");
   const [loading, setLoading] = createSignal(true);
-  const [error, setError] = createSignal('');
+  const [error, setError] = createSignal("");
   const [processing, setProcessing] = createSignal(false);
-  const [succeeded, setSucceeded] = createSignal(false);
-  const [cardError, setCardError] = createSignal('');
-  
+  const [paymentOutcome, setPaymentOutcome] = createSignal(null);
+  const [cardError, setCardError] = createSignal("");
+
   let stripe = null;
   let elements = null;
   let cardElement = null;
@@ -49,43 +52,43 @@ function Payment(props) {
   onMount(async () => {
     try {
       // Create payment intent
-      const response = await fetch('/api/payment/create-pay-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/payment/create-pay-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ amount: 1 }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.clientSecret) {
         setClientSecret(data.clientSecret);
-        
+
         // Initialize Stripe and create Elements
         stripe = await stripePromise;
         elements = stripe.elements({
           clientSecret: data.clientSecret,
           appearance: {
-            theme: 'stripe',
+            theme: "stripe",
             variables: {
-              colorPrimary: '#282c34',
+              colorPrimary: "#282c34",
             },
           },
         });
-        
+
         // Create and mount card element
-        cardElement = elements.create('payment');
-        cardElement.mount('#card-element');
-        
+        cardElement = elements.create("payment");
+        cardElement.mount("#card-element");
+
         // Handle real-time validation errors
-        cardElement.on('change', (event) => {
-          setCardError(event.error ? event.error.message : '');
+        cardElement.on("change", (event) => {
+          setCardError(event.error ? event.error.message : "");
         });
       } else if (data.error) {
         setError(data.error);
       }
     } catch (err) {
-      setError('Failed to initialize payment');
+      setError("Failed to initialize payment");
     } finally {
       setLoading(false);
     }
@@ -97,37 +100,67 @@ function Payment(props) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setProcessing(true);
-    setCardError('');
-    
+    setCardError("");
+    setPaymentOutcome(null);
+
     if (!stripe || !elements) {
       setProcessing(false);
       return;
     }
-    
+
     try {
       const { error: submitError } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: window.location.origin,
         },
-        redirect: 'if_required',
+        redirect: "if_required",
       });
-      
-    if (submitError) {
-  setCardError(submitError.message);
+
+      if (submitError) {
+        const failureMessage =
+          submitError.message || "Payment failed. Please try again.";
+        setCardError(failureMessage);
+        setPaymentOutcome({
+          type: "error",
+          title: "Payment failed",
+          message: failureMessage,
+        });
+
         if (props.onPaymentFailure) {
-          props.onPaymentFailure(submitError.message);
+          props.onPaymentFailure(failureMessage);
         }
       } else {
-        // Show success screen first.
-        // Wait for user to click Continue.
-        setSucceeded(true);
+        setPaymentOutcome({
+          type: "success",
+          title: "Payment successful",
+          message:
+            "Your payment was processed. You can close this message and return to the dashboard.",
+        });
       }
     } catch (err) {
-      setCardError('Payment failed. Please try again.');
-      if (props.onPaymentFailure) props.onPaymentFailure(err.message);
+      const failureMessage = "Payment failed. Please try again.";
+      setCardError(failureMessage);
+      setPaymentOutcome({
+        type: "error",
+        title: "Payment failed",
+        message: failureMessage,
+      });
+      if (props.onPaymentFailure) props.onPaymentFailure(failureMessage);
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setPaymentOutcome(null);
+    setCardError("");
+    setProcessing(false);
+  };
+
+  const handleClosePayment = () => {
+    if (props.onClose) {
+      props.onClose();
     }
   };
 
@@ -150,39 +183,74 @@ function Payment(props) {
     <div className="payment-container">
       <h2 className="payment-header">Upgrade Your Account</h2>
       <p className="payment-description">
-        You've reached your free task limit. Upgrade to continue creating unlimited tasks.
+        You've reached your free task limit. Upgrade to continue creating
+        unlimited tasks.
       </p>
-      
-      <form onSubmit={handleSubmit} className="payment-form">
-        <h3 className="payment-title">Complete Your Payment</h3>
-        <p className="payment-subtitle">Upgrade to continue creating unlimited tasks</p>
-        
-        <div id="card-element" className="payment-element"></div>
-        
-        {cardError() && <div className="payment-error">{cardError()}</div>}
-        
-       {succeeded() ? (
-  <div className="payment-success">
-      <p>Payment successful! Your account has been upgraded.</p>
-      <button
-        type="button"
-        onClick={props.onPaymentSuccess}
-        className="payment-submit-button"
-      >
-        Continue to Dashboard
-      </button>
-    </div>
-  ) : (
+
+      {paymentOutcome() ? (
+        <div className="payment-form">
+          <div
+            className={`payment-status-message ${paymentOutcome().type === "success" ? "payment-success" : "payment-error"}`}
+          >
+            <div className="payment-status-icon">
+              {paymentOutcome().type === "success" ? "✅" : "❌"}
+            </div>
+            <div>
+              <h3>{paymentOutcome().title}</h3>
+              <p>{paymentOutcome().message}</p>
+            </div>
+          </div>
+
+          <div className="payment-status-actions">
+            {paymentOutcome().type === "success" ? (
+              <button
+                type="button"
+                onClick={handleClosePayment}
+                className="payment-submit-button"
+              >
+                Return to Dashboard
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="payment-submit-button"
+                >
+                  Retry Payment
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClosePayment}
+                  className="payment-logout-button"
+                >
+                  Cancel Payment
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="payment-form">
+          <h3 className="payment-title">Complete Your Payment</h3>
+          <p className="payment-subtitle">
+            Upgrade to continue creating unlimited tasks
+          </p>
+
+          <div id="card-element" className="payment-element"></div>
+
+          {cardError() && <div className="payment-error">{cardError()}</div>}
+
           <button
             type="submit"
             disabled={processing()}
             className="payment-submit-button"
           >
-            {processing() ? 'Processing...' : 'Pay $1.00'}
+            {processing() ? "Processing..." : "Pay $1.00"}
           </button>
-        )}
-      </form>
-      
+        </form>
+      )}
+
       <button onClick={props.onLogout} className="payment-logout-button">
         Logout
       </button>

@@ -16,12 +16,12 @@
  * Provides consistent typography across different operating systems
  */
 body {
-  margin: 0;  /* Remove default margin */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;  /* System font stack for optimal performance */
-  -webkit-font-smoothing: antialiased;     /* Smooth font rendering on WebKit */
-  -moz-osx-font-smoothing: grayscale;      /* Smooth font rendering on Firefox */
+  margin: 0; /* Remove default margin */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif; /* System font stack for optimal performance */
+  -webkit-font-smoothing: antialiased; /* Smooth font rendering on WebKit */
+  -moz-osx-font-smoothing: grayscale; /* Smooth font rendering on Firefox */
 }
 
 /**
@@ -29,8 +29,8 @@ body {
  * Uses source-code-pro for better code readability
  */
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 /* ==========================================================================
@@ -82,9 +82,9 @@ code {
  */
 .dform {
   display: flex;
-  flex-direction: column;     /* Stack form elements vertically */
-  gap: 5px;                   /* Space between inputs */
-  align-items: flex-start;    /* Align form elements to the left */
+  flex-direction: column; /* Stack form elements vertically */
+  gap: 5px; /* Space between inputs */
+  align-items: flex-start; /* Align form elements to the left */
 }
 
 /**
@@ -103,7 +103,7 @@ code {
  */
 .d-btn-span {
   display: flex;
-  gap: 4px;                   /* Space between buttons */
+  gap: 4px; /* Space between buttons */
   margin-left: 20px;
 }
 
@@ -111,7 +111,7 @@ code {
  * Task description styling
  * Provides padding for better readability of task descriptions
  */
-.desc { 
+.desc {
   padding: 20px;
 }
 
@@ -120,9 +120,9 @@ code {
  * Styling for due date and category labels in task items
  */
 .dcat-lab {
-  font-size: 0.9em;          /* Smaller font for labels */
-  color: #666;               /* Gray color for secondary text */
-  margin-bottom: 4px;        /* Space below label */
+  font-size: 0.9em; /* Smaller font for labels */
+  color: #666; /* Gray color for secondary text */
+  margin-bottom: 4px; /* Space below label */
 }
 
 /**
@@ -131,8 +131,8 @@ code {
  */
 .filter-buttons {
   display: flex;
-  gap: 10px;                  /* Space between filter buttons */
-  margin: 20px 0;             /* Vertical margin with no horizontal margin */
+  gap: 10px; /* Space between filter buttons */
+  margin: 20px 0; /* Vertical margin with no horizontal margin */
   padding-left: 20px;
 }
 
@@ -141,12 +141,12 @@ code {
  * Consistent button appearance with hover and active states
  */
 .filter-buttons button {
-  padding: 8px 16px;           /* Comfortable button size */
-  border: 1px solid #ddd;      /* Subtle border */
-  background: #f5f5f5;         /* Light gray background */
-  cursor: pointer;             /* Pointer cursor on hover */
-  border-radius: 4px;          /* Rounded corners */
-  transition: all 0.2s;        /* Smooth transition effects */
+  padding: 8px 16px; /* Comfortable button size */
+  border: 1px solid #ddd; /* Subtle border */
+  background: #f5f5f5; /* Light gray background */
+  cursor: pointer; /* Pointer cursor on hover */
+  border-radius: 4px; /* Rounded corners */
+  transition: all 0.2s; /* Smooth transition effects */
 }
 
 /**
@@ -154,7 +154,7 @@ code {
  * Darker background on hover for visual feedback
  */
 .filter-buttons button:hover {
-  background: #e9ecef;         /* Darker gray on hover */
+  background: #e9ecef; /* Darker gray on hover */
 }
 
 /**
@@ -162,9 +162,9 @@ code {
  * Blue background and white text for active filter
  */
 .filter-buttons button.active {
-  background: #007bff;         /* Primary blue color */
-  color: white;                /* White text for contrast */
-  border-color: #007bff;       /* Match background color */
+  background: #007bff; /* Primary blue color */
+  color: white; /* White text for contrast */
+  border-color: #007bff; /* Match background color */
 }
 
 /**
@@ -172,7 +172,7 @@ code {
  * Provides spacing between checkbox and task text
  */
 .check {
-  margin-right: 4px;          /* Small gap between checkbox and text */
+  margin-right: 4px; /* Small gap between checkbox and text */
 }
 
 /* ==========================================================================
@@ -214,7 +214,7 @@ code {
   text-align: left;
   margin-top: 20px;
   padding-left: 20px;
-  font-style: italic;         /* Italic for tagline emphasis */
+  font-style: italic; /* Italic for tagline emphasis */
 }
 
 /**
@@ -243,9 +243,9 @@ form {
  */
 .login-container form {
   display: flex;
-  flex-direction: column;     /* Stack form elements vertically */
-  gap: 5px;                   /* Space between inputs */
-  align-items: flex-start;    /* Align form elements to the left */
+  flex-direction: column; /* Stack form elements vertically */
+  gap: 5px; /* Space between inputs */
+  align-items: flex-start; /* Align form elements to the left */
 }
 
 /**
@@ -253,7 +253,7 @@ form {
  * Custom margin for email input alignment
  */
 #e-input {
-  margin: 0 5px 0 0px;        /* Right margin for spacing */
+  margin: 0 5px 0 0px; /* Right margin for spacing */
 }
 
 /**
@@ -261,7 +261,7 @@ form {
  * Custom margin for password input alignment
  */
 #p-input {
-  margin: 0 5px 0px 0px;      /* Right margin for spacing */
+  margin: 0 5px 0px 0px; /* Right margin for spacing */
 }
 
 /**
@@ -283,8 +283,8 @@ form {
  * Red text for error visibility with proper spacing
  */
 .error {
-  color: red;                 /* Red color for error emphasis */
-  margin: 10px 20px;          /* Consistent spacing around error messages */
+  color: red; /* Red color for error emphasis */
+  margin: 10px 20px; /* Consistent spacing around error messages */
 }
 
 /* ==========================================================================
@@ -382,6 +382,43 @@ form {
   padding: 10px;
   background: #d4edda;
   border-radius: 4px;
+}
+
+.payment-status-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.payment-status-message h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.payment-status-message p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.payment-status-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.payment-status-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-status-actions .payment-submit-button,
+.payment-status-actions .payment-logout-button {
+  flex: 1;
+  width: auto;
 }
 
 /**
