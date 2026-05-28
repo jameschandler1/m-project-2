@@ -79,7 +79,7 @@ async function benchmarkPaginatedEndpoint() {
   try {
     const response = await fetch(url, {
       headers: {
-        Cookie: SESSION_COOKIE,
+        Cookie: `sid=${SESSION_COOKIE}`,
       },
     });
 
