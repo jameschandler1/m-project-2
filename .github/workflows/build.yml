@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.16.0
 
       - name: Install React Dependencies
         working-directory: ./frontend
@@ -23,4 +23,12 @@ jobs:
 
       - name: Build React Application
         working-directory: ./frontend
+        run: npm run build
+
+        - name: Install Solid Dependencies
+        working directory: ./frontend-sld
+        run : npm install
+
+        - name: Build Solid Application
+        working-directory: ./frontend-sld
         run: npm run build
