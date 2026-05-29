@@ -21,7 +21,7 @@
  * - filter: Current filter mode ('all', 'dueSoon', 'completed')
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
   // Task list state
@@ -85,9 +85,10 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
     }
   });
 
-  const loadTasks = async (targetPage = page) => {
+  const loadTasks = useCallback(async (targetPage = page) => {
     setLoading(true);
     setError("");
+ 
 
     try {
       const response = await fetch(`/api/tasks?page=${targetPage}&limit=50`, {
@@ -122,14 +123,15 @@ function Dashboard({ user, onLogout, paymentStatus, onTaskCreated }) {
     } finally {
       setLoading(false);
     }
-  };
+ }, [page]);
+
 
   /**
    * Fetch tasks from API whenever the page changes.
    */
   useEffect(() => {
     loadTasks(page);
-  }, [page]);
+  }, [page, loadTasks]);
 
   /**
    * Fetch media files for a specific task
