@@ -25,10 +25,10 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-        - name: Install Solid Dependencies
+      - name: Install Solid Dependencies
         working-directory: ./frontend-sld
         run: npm install
 
-        - name: Build Solid Application
+      - name: Build Solid Application
         working-directory: ./frontend-sld
         run: npm run build
