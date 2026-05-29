@@ -26,8 +26,8 @@ jobs:
         run: npm run build
 
         - name: Install Solid Dependencies
-        working directory: ./frontend-sld
-        run : npm install
+        working-directory: ./frontend-sld
+        run: npm install
 
         - name: Build Solid Application
         working-directory: ./frontend-sld
