@@ -33,18 +33,18 @@ router.use(auth);
  * - 500: Server error
  */
 router.get("/", async (req, res) => {
-  // Get user ID from session (set by auth middleware)
+  // Get user ID from JWT (set by auth middleware)
   const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
   const limit = Math.min(
     Math.max(Number.parseInt(req.query.limit, 10) || 50, 1),
     100,
   );
 
-  const total = await Task.countByUser(req.session.userId);
+  const total = await Task.countByUser(req.userId);
   const totalPages = Math.max(Math.ceil(total / limit), 1);
   const safePage = Math.min(page, totalPages);
 
-  const tasks = await Task.findAllByUser(req.session.userId, {
+  const tasks = await Task.findAllByUser(req.userId, {
     page: safePage,
     limit,
   });
@@ -77,8 +77,8 @@ router.get("/", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   // Parameter chain: req.params.id -> Task.findById() -> task object
-  // User ID from session ensures user can only access their own tasks
-  const task = await Task.findById(req.params.id, req.session.userId);
+  // User ID from JWT ensures user can only access their own tasks
+  const task = await Task.findById(req.params.id, req.userId);
   if (!task) return res.status(404).json({ error: "Not found" });
   res.json(task);
 });
@@ -121,7 +121,7 @@ router.post(
     const [userRows] = await db
       .promise()
       .query("SELECT payment_status, tasks_created FROM user WHERE id = ?", [
-        req.session.userId,
+        req.userId,
       ]);
 
     const user = userRows[0];
@@ -138,10 +138,10 @@ router.post(
     // Extract validated and processed data from request body
     const { title, description, due_date, category } = req.body;
 
-    // Parameter chain: req.session.userId + request body -> Task.create() -> task ID
+    // Parameter chain: req.userId + request body -> Task.create() -> task ID
     // This creates a task associated with the authenticated user
     const id = await Task.create(
-      req.session.userId, // User ID from session
+      req.userId, // User ID from JWT
       title, // Validated title
       description, // Validated description (may be null)
       due_date, // Validated Date object
@@ -152,7 +152,7 @@ router.post(
     await db
       .promise()
       .query("UPDATE user SET tasks_created = tasks_created + 1 WHERE id = ?", [
-        req.session.userId,
+        req.userId,
       ]);
 
     // Return 201 Created status with the new task ID
@@ -199,14 +199,14 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Parameter chain: req.params.id + req.session.userId + req.body -> Task.update()
+    // Parameter chain: req.params.id + req.userId + req.body -> Task.update()
     // This complex parameter passing ensures:
     // 1. Only the specified task is updated
     // 2. Only if it belongs to the authenticated user
     // 3. Only with the provided fields
     const updated = await Task.update(
       req.params.id, // Task ID from URL
-      req.session.userId, // User ID from session (authorization)
+      req.userId, // User ID from JWT (authorization)
       req.body, // Validated fields to update
     );
 
@@ -230,9 +230,9 @@ router.put(
  * - 500: Server error
  */
 router.delete("/:id", async (req, res) => {
-  // Parameter chain: req.params.id + req.session.userId -> Task.delete()
+  // Parameter chain: req.params.id + req.userId -> Task.delete()
   // This ensures users can only delete their own tasks
-  const deleted = await Task.delete(req.params.id, req.session.userId);
+  const deleted = await Task.delete(req.params.id, req.userId);
   if (!deleted) return res.status(404).json({ error: "Not found" });
   res.json({ success: true });
 });

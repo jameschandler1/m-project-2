@@ -106,7 +106,7 @@ router.post("/create-pay-intent", async (req, res) => {
       amount: amountInCents,
       currency: "usd",
       metadata: {
-        userId: req.session.userId,
+        userId: req.userId,
       },
     });
     
@@ -135,7 +135,7 @@ router.get("/status", async (req, res) => {
       .promise()
       .query(
         "SELECT payment_status, tasks_created FROM user WHERE id = ?",
-        [req.session.userId]
+        [req.userId]
       );
     
     if (rows.length === 0) {
