@@ -13,8 +13,8 @@ export const options = {
   ],
 };
 
-// Authenticate with a random pre-generated user
-function authenticate() {
+// Authenticate once per VU at startup
+export function setup() {
   // Select a random user from the pre-generated users
   const userIndex = Math.floor(Math.random() * USER_COUNT) + 1;
   const email = `loadtest-user-${userIndex}@example.com`;
@@ -26,35 +26,26 @@ function authenticate() {
     headers: { "Content-Type": "application/json" },
   });
 
-  check(loginRes, {
-    "login status is 200": (r) => r.status === 200,
-  });
-
   if (loginRes.status !== 200) {
     console.error(`[LOGIN FAIL] Status=${loginRes.status}, Body=${loginRes.body}`);
+    throw new Error(`Login failed for user ${email}`);
   }
 
   // Extract JWT token from login response
-  let token = null;
   try {
     const body = JSON.parse(loginRes.body);
-    token = body.token;
+    return { token: body.token, email };
   } catch (e) {
     console.error(`[LOGIN PARSE ERROR] ${e.message}`);
+    throw new Error(`Failed to parse login response for user ${email}`);
   }
-
-  return { loginRes, token };
 }
 
-export default function () {
-  // Authenticate first
-  const { loginRes, token } = authenticate();
-
+export default function (data) {
   // Make authenticated request to tasks endpoint with JWT token
-  const headers = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  const headers = {
+    Authorization: `Bearer ${data.token}`,
+  };
 
   const response = http.get(`${BASE_URL}/api/tasks?page=1&limit=50`, {
     headers: headers,
@@ -66,7 +57,7 @@ export default function () {
 
   if (response.status !== 200) {
     console.error(`[TASKS FAIL] Status=${response.status}, Body=${response.body}`);
-    console.error(`[DEBUG] Token: ${token ? token.substring(0, 20) + '...' : 'null'}`);
-    console.error(`[DEBUG] Login status: ${loginRes.status}`);
+    console.error(`[DEBUG] User: ${data.email}`);
+    console.error(`[DEBUG] Token: ${data.token ? data.token.substring(0, 20) + '...' : 'null'}`);
   }
 }
