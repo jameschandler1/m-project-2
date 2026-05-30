@@ -5,9 +5,6 @@ const BASE_URL = __ENV.URL || "http://18.119.176.95:3000";
 const USER_COUNT = 100;
 const PASSWORD = "Password123";
 
-// Explicitly enable cookie jar for session handling
-http.cookieJar();
-
 export const options = {
   stages: [
     { duration: "30s", target: 10 },
