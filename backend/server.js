@@ -19,13 +19,24 @@ require('dotenv').config({
 const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
-const MySQLStore = require("express-mysql-session")(session);
+const RedisStore = require("connect-redis").default;
+const { createClient } = require("redis");
 
 const db = require("./db");
 const app = express();
 
-// Create MySQL-based session store
-const sessionStore = new MySQLStore({}, db.promise());
+// Create Redis client for session storage
+const redisClient = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379"
+});
+
+redisClient.on("error", (err) => console.error("Redis Client Error", err));
+
+// Connect to Redis
+redisClient.connect().catch(console.error);
+
+// Create Redis-based session store
+const sessionStore = new RedisStore({ client: redisClient });
 
 /**
  * CORS Configuration
