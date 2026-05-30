@@ -38,8 +38,7 @@ headers: {
 
 
 if (loginResponse.status === 200) {
-const cookie =
-loginResponse.cookies.sid?.[0]?.value;
+const cookie = console.log(JSON.stringify(loginResponse.cookies, null, 2));
 
 
 if (!cookie) {
