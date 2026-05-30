@@ -7,6 +7,7 @@ const PASSWORD = "Password123";
 
 // Track stage metrics
 let currentStage = 0;
+let startTime = new Date();
 let stageMetrics = {
   0: { requests: 0, failures: 0, totalTime: 0 },
   1: { requests: 0, failures: 0, totalTime: 0 },
@@ -45,7 +46,7 @@ export function setup() {
   try {
     const body = JSON.parse(loginRes.body);
     console.log(`[SETUP] VU ${__VU} authenticated as ${email}`);
-    return { token: body.token, email };
+    return { token: body.token, email, startTime: new Date() };
   } catch (e) {
     console.error(`[LOGIN PARSE ERROR] ${e.message}`);
     throw new Error(`Failed to parse login response for user ${email}`);
@@ -54,7 +55,7 @@ export function setup() {
 
 export default function (data) {
   // Determine current stage based on time
-  const elapsed = new Date() - __VU_STARTED_AT;
+  const elapsed = new Date() - data.startTime;
   if (elapsed < 30000) {
     currentStage = 0;
   } else if (elapsed < 90000) {
@@ -76,12 +77,12 @@ export default function (data) {
     Authorization: `Bearer ${data.token}`,
   };
 
-  const startTime = new Date();
+  const reqStartTime = new Date();
   const response = http.get(`${BASE_URL}/api/tasks?page=1&limit=50`, {
     headers: headers,
   });
-  const endTime = new Date();
-  const responseTime = endTime - startTime;
+  const reqEndTime = new Date();
+  const responseTime = reqEndTime - reqStartTime;
 
   // Track metrics for current stage
   stageMetrics[currentStage].requests++;
