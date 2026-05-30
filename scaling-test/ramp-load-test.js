@@ -5,6 +5,9 @@ const BASE_URL = __ENV.URL || "http://18.119.176.95:3000";
 const USER_COUNT = 100;
 const PASSWORD = "Password123";
 
+// Explicitly enable cookie jar for session handling
+http.cookieJar();
+
 export const options = {
   stages: [
     { duration: "30s", target: 10 },
@@ -39,7 +42,7 @@ function authenticate() {
 
 export default function () {
   // Authenticate first
-  authenticate();
+  const loginRes = authenticate();
 
   // Make authenticated request to tasks endpoint
   const response = http.get(`${BASE_URL}/api/tasks?page=1&limit=50`);
@@ -50,5 +53,9 @@ export default function () {
 
   if (response.status !== 200) {
     console.error(`[TASKS FAIL] Status=${response.status}, Body=${response.body}`);
+    console.error(`[DEBUG] Login status: ${loginRes.status}`);
+    console.error(`[DEBUG] Login body: ${loginRes.body}`);
+    console.error(`[DEBUG] Login response cookies: ${JSON.stringify(loginRes.cookies)}`);
+    console.error(`[DEBUG] Tasks response cookies: ${JSON.stringify(response.cookies)}`);
   }
 }
