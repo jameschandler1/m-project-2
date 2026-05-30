@@ -37,12 +37,11 @@ const Task = {
     const offset = (safePage - 1) * safeLimit;
 
     // Execute SQL SELECT query to get a paginated slice of tasks for a specific user
-    // Select only needed columns to reduce data transfer
     // ORDER BY due_date, id keeps pagination deterministic and index-friendly
     const [rows] = await db
       .promise()
       .query(
-        "SELECT id, user_id, title, description, due_date, category, completed, created_at, updated_at FROM tasks WHERE user_id = ? ORDER BY due_date, id LIMIT ? OFFSET ?",
+        "SELECT * FROM tasks WHERE user_id = ? ORDER BY due_date, id LIMIT ? OFFSET ?",
         [user_id, safeLimit, offset],
       );
 

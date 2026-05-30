@@ -24,31 +24,8 @@ const MySQLStore = require("express-mysql-session")(session);
 const db = require("./db");
 const app = express();
 
-// Try to use Redis for session storage if available, fall back to MySQL
-let sessionStore;
-try {
-  const RedisStore = require("connect-redis")(session);
-  const redis = require("redis");
-  const redisClient = redis.createClient({
-    host: process.env.REDIS_HOST || "localhost",
-    port: parseInt(process.env.REDIS_PORT || "6379"),
-  });
-
-  redisClient.on('error', (err) => {
-    console.log('Redis client error, falling back to MySQL:', err.message);
-  });
-
-  sessionStore = new RedisStore({ client: redisClient });
-  console.log("✓ Using Redis for session storage");
-  console.log(`  Redis host: ${process.env.REDIS_HOST || "localhost"}:${process.env.REDIS_PORT || "6379"}`);
-} catch (e) {
-  console.log("✗ Redis not available, falling back to MySQL session storage");
-  console.log("  Error:", e.message);
-  console.log("  To enable Redis: Ensure redis is installed and running");
-  console.log("  Then set REDIS_HOST and REDIS_PORT environment variables");
-  sessionStore = new MySQLStore({}, db.promise());
-  console.log("✓ Using MySQL for session storage");
-}
+// Create MySQL-based session store
+const sessionStore = new MySQLStore({}, db.promise());
 
 /**
  * CORS Configuration
@@ -103,7 +80,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
-    rolling: false, // Disable rolling sessions to reduce database writes
+    rolling: true,
     cookie: {
       httpOnly: true,
       secure: false, // change to true only when HTTPS is enabled

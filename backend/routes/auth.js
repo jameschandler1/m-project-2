@@ -71,8 +71,6 @@ router.post(
 
       // Automatically log in the new user by setting session
       req.session.userId = userId;
-      // Cache user data in session for subsequent requests
-      req.session.user = { id: userId, email };
       logSessionCookie(req, "register");
 
       // Return user information (excluding sensitive data)
@@ -128,8 +126,6 @@ router.post(
 
       // Create session for authenticated user
       req.session.userId = user.id;
-      // Cache user data in session for subsequent requests
-      req.session.user = { id: user.id, email: user.email };
       logSessionCookie(req, "login");
 
       // Return user information (excluding sensitive data)

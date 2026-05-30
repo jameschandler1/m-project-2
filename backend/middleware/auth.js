@@ -26,15 +26,8 @@ module.exports = async function (req, res, next) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // Step 2: Check if user data is already cached in session
-  // This avoids unnecessary database queries on every request
-  if (req.session.user) {
-    req.user = req.session.user;
-    return next();
-  }
-
   try {
-    // Step 3: Validate that the user from session still exists in database
+    // Step 2: Validate that the user from session still exists in database
     // This handles cases where user was deleted but session is still valid
     const user = await User.findById(req.session.userId);
 
@@ -44,12 +37,11 @@ module.exports = async function (req, res, next) {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // Step 4: Cache sanitized user data in session for subsequent requests
+    // Step 3: Attach sanitized user data to request object
     // Only include necessary fields (id, email) - never include sensitive data
-    req.session.user = { id: user.id, email: user.email };
-    req.user = req.session.user;
+    req.user = { id: user.id, email: user.email };
 
-    // Step 5: Pass control to the next middleware/route handler
+    // Step 4: Pass control to the next middleware/route handler
     // Authentication successful, proceed with the request
     next();
   } catch (error) {
