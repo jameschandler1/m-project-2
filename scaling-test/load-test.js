@@ -17,9 +17,6 @@ export default function () {
 
   if (response.status !== 200) {
     console.error(`[FAIL] Status=${response.status}`);
-
-    `
-console.error(response.body);
-```;
+    console.error(response.body);
   }
 }
