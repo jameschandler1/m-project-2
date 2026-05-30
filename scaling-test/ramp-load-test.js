@@ -34,15 +34,28 @@ function authenticate() {
     console.error(`[LOGIN FAIL] Status=${loginRes.status}, Body=${loginRes.body}`);
   }
 
-  return loginRes;
+  // Extract session cookie from login response
+  let sessionCookie = null;
+  if (loginRes.cookies && loginRes.cookies.sid && loginRes.cookies.sid.length > 0) {
+    sessionCookie = `sid=${loginRes.cookies.sid[0].value}`;
+  }
+
+  return { loginRes, sessionCookie };
 }
 
 export default function () {
   // Authenticate first
-  const loginRes = authenticate();
+  const { loginRes, sessionCookie } = authenticate();
 
-  // Make authenticated request to tasks endpoint
-  const response = http.get(`${BASE_URL}/api/tasks?page=1&limit=50`);
+  // Make authenticated request to tasks endpoint with session cookie
+  const headers = {};
+  if (sessionCookie) {
+    headers.Cookie = sessionCookie;
+  }
+
+  const response = http.get(`${BASE_URL}/api/tasks?page=1&limit=50`, {
+    headers: headers,
+  });
 
   check(response, {
     "tasks status is 200": (r) => r.status === 200,
@@ -50,9 +63,8 @@ export default function () {
 
   if (response.status !== 200) {
     console.error(`[TASKS FAIL] Status=${response.status}, Body=${response.body}`);
+    console.error(`[DEBUG] Session cookie: ${sessionCookie}`);
     console.error(`[DEBUG] Login status: ${loginRes.status}`);
-    console.error(`[DEBUG] Login body: ${loginRes.body}`);
-    console.error(`[DEBUG] Login response cookies: ${JSON.stringify(loginRes.cookies)}`);
     console.error(`[DEBUG] Tasks response cookies: ${JSON.stringify(response.cookies)}`);
   }
 }
