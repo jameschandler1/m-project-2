@@ -19,7 +19,7 @@ require('dotenv').config({
 const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
-const RedisStore = require("connect-redis").default;
+const RedisStore = require("connect-redis")(session);
 const { createClient } = require("redis");
 
 const db = require("./db");
