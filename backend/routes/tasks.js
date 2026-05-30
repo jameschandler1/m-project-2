@@ -40,28 +40,14 @@ router.get("/", async (req, res) => {
     100,
   );
 
-  // Optimize: Combine COUNT and SELECT into a single query using SQL window function
-  const [rows] = await db
-    .promise()
-    .query(
-      `SELECT 
-        t.*,
-        COUNT(*) OVER() as total_count
-       FROM tasks t
-       WHERE t.user_id = ?
-       ORDER BY t.due_date, t.id
-       LIMIT ? OFFSET ?`,
-      [req.session.userId, limit, (page - 1) * limit]
-    );
-
-  const tasks = rows.map(row => {
-    const { total_count, ...task } = row;
-    return task;
-  });
-
-  const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
+  const total = await Task.countByUser(req.session.userId);
   const totalPages = Math.max(Math.ceil(total / limit), 1);
   const safePage = Math.min(page, totalPages);
+
+  const tasks = await Task.findAllByUser(req.session.userId, {
+    page: safePage,
+    limit,
+  });
 
   res.json({
     tasks,
