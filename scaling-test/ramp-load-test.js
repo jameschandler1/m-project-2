@@ -35,6 +35,8 @@ headers: {
 }
 );
 
+
+
 if (loginResponse.status === 200) {
 const cookie =
 loginResponse.cookies.sid?.[0]?.value;
@@ -42,7 +44,7 @@ loginResponse.cookies.sid?.[0]?.value;
 
 if (!cookie) {
   throw new Error(
-    '[VU ${__VU}] Login succeeded but no session cookie returned'
+    `[VU ${__VU}] Login succeeded but no session cookie returned`
   );
 }
 
@@ -73,23 +75,23 @@ console.error(
 );
 
 console.error(
-  'Login Status: ${loginResponse.status}'
+  `Login Status: ${loginResponse.status}`
 );
 
 console.error(
-  'Login Body: ${loginResponse.body}'
+  `Login Body: ${loginResponse.body}`
 );
 
 console.error(
-  'Register Status: ${registerResponse.status}'
+  `Register Status: ${registerResponse.status}`
 );
 
 console.error(
-  'Register Body: ${registerResponse.body}'
+  `Register Body: ${registerResponse.body}`
 );
 
 throw new Error(
-  '[VU ${__VU}] Could not authenticate'
+  `[VU ${__VU}] Could not authenticate`
 );
 
 
@@ -122,7 +124,7 @@ console.error(
 );
 
 console.error(
-  'Status: ${response.status}'
+  `Status: ${response.status}`
 );
 
 console.error(
