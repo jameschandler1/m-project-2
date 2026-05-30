@@ -21,28 +21,36 @@ const session = require("express-session");
 const cors = require("cors");
 const MySQLStore = require("express-mysql-session")(session);
 
+const db = require("./db");
+const app = express();
+
 // Try to use Redis for session storage if available, fall back to MySQL
 let sessionStore;
 try {
-  const RedisStore = require("connect-redis")(session);
+  const RedisStore = require("connect-redis").default;
   const redis = require("redis");
   const redisClient = redis.createClient({
-    host: process.env.REDIS_HOST || "localhost",
-    port: process.env.REDIS_PORT || 6379,
+    socket: {
+      host: process.env.REDIS_HOST || "localhost",
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+    },
   });
+
+  redisClient.on('error', (err) => {
+    console.log('Redis client error, falling back to MySQL:', err.message);
+  });
+
   sessionStore = new RedisStore({ client: redisClient });
   console.log("Using Redis for session storage");
 } catch (e) {
   console.log("Redis not available, falling back to MySQL session storage");
+  console.log("To enable Redis: npm install connect-redis@4 redis");
   sessionStore = new MySQLStore({}, db.promise());
 }
 
-const db = require("./db");
-const app = express();
-
 /**
  * CORS Configuration
- * 
+ *
  * Configures Cross-Origin Resource Sharing to allow frontend applications
  * to access the API. Uses environment variable for flexibility.
  */
