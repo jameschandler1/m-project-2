@@ -7,8 +7,8 @@ const PASSWORD = "Password123";
 
 export const options = {
   stages: [
-    { duration: "30s", target: 10 },
-    { duration: "1m", target: 50 },
+    { duration: "30s", target: 100 },
+    { duration: "1m", target: 100 },
     { duration: "30s", target: 0 },
   ],
 };

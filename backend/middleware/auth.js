@@ -13,7 +13,7 @@ const User = require("../models/user");
 
 /**
  * Authentication middleware function
- * 
+ *
  * @param {Object} req - Express request object containing session data
  * @param {Object} res - Express response object for sending responses
  * @param {Function} next - Express next function to pass control to next middleware
@@ -25,23 +25,31 @@ module.exports = async function (req, res, next) {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  
+
+  // Step 2: Check if user data is already cached in session
+  // This avoids unnecessary database queries on every request
+  if (req.session.user) {
+    req.user = req.session.user;
+    return next();
+  }
+
   try {
-    // Step 2: Validate that the user from session still exists in database
+    // Step 3: Validate that the user from session still exists in database
     // This handles cases where user was deleted but session is still valid
     const user = await User.findById(req.session.userId);
-    
+
     if (!user) {
       // User no longer exists, invalidate the session completely
       req.session.destroy();
       return res.status(401).json({ error: "User not found" });
     }
-    
-    // Step 3: Attach sanitized user data to request object
+
+    // Step 4: Cache sanitized user data in session for subsequent requests
     // Only include necessary fields (id, email) - never include sensitive data
-    req.user = { id: user.id, email: user.email };
-    
-    // Step 4: Pass control to the next middleware/route handler
+    req.session.user = { id: user.id, email: user.email };
+    req.user = req.session.user;
+
+    // Step 5: Pass control to the next middleware/route handler
     // Authentication successful, proceed with the request
     next();
   } catch (error) {

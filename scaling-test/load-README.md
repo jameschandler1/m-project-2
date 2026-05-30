@@ -1,12 +1,12 @@
 # Scaling Test Suite
 
-This directory contains scripts used to benchmark and load test the Task Tracking application.
+This directory contains scripts used to load test the Task Tracking application.
 
 The goal of these tests is to measure:
 
 * Homepage performance under concurrent load
+* Authenticated API performance under concurrent load
 * Database read performance under concurrent load
-* Pagination performance under concurrent load
 
 ---
 
@@ -30,11 +30,23 @@ choco install k6
 
 ### Linux
 
-See the official k6 installation guide.
+```bash
+# See the official k6 installation guide
+# https://k6.io/docs/getting-started/installation/
+```
+
+## Backend Dependencies
+
+The seed script requires Node.js and the backend dependencies:
+
+```bash
+cd backend
+npm install
+```
 
 ---
 
-## Verify Backend Is Running
+# Verify Backend Is Running
 
 For local testing:
 
@@ -43,10 +55,12 @@ cd backend
 npm start
 ```
 
+The backend runs on port 4000 by default.
+
 For deployed testing:
 
 ```text
-http://<server-ip>:3000
+http://<server-ip>:4000
 ```
 
 ---
@@ -55,19 +69,27 @@ http://<server-ip>:3000
 
 ```text
 scaling-test/
-├── README.md
-├── seed-loadtest-users.js
-├── load-test.js
-├── ramp-load-test.js
-├── taskep-load-test.js
-└── auth-helper.js
+├── load-README.md           # This file
+├── seed-loadtest-users.js   # Generates test users and tasks
+├── load-test.js             # Homepage load test (no auth)
+└── ramp-load-test.js        # Authenticated API ramp test
 ```
 
 ---
 
-# Load Test Users
+# Execution Order
 
-The authenticated benchmarks require users with task data.
+**IMPORTANT**: Run the scripts in this order for proper testing:
+
+1. **seed-loadtest-users.js** - Generate test data (run once)
+2. **load-test.js** - Test homepage performance
+3. **ramp-load-test.js** - Test authenticated API performance
+
+---
+
+# Step 1: Create Load Test Data
+
+The authenticated load test requires users with task data.
 
 The seed script creates:
 
@@ -84,17 +106,15 @@ loadtest-user-2@example.com
 loadtest-user-100@example.com
 ```
 
-Password:
+Password for all test users:
 
 ```text
 Password123
 ```
 
----
+## Run the Seed Script
 
-# Create Load Test Data
-
-Run from project root:
+From the project root:
 
 ```bash
 node scaling-test/seed-loadtest-users.js
@@ -103,15 +123,21 @@ node scaling-test/seed-loadtest-users.js
 Expected result:
 
 ```text
-100 users
-10,000 tasks
+Creating 100 load-test users...
+[CREATED] loadtest-user-1@example.com
+...
+Creating tasks for 100 users...
+Inserting 10000 tasks...
+Load test data created successfully.
+Users: 100
+Tasks: 10000
 ```
 
-This only needs to be run once unless the database is reset.
+**Note**: This only needs to be run once unless the database is reset.
 
 ---
 
-# Test 1: Homepage Load Test
+# Step 2: Homepage Load Test
 
 Purpose:
 
@@ -123,12 +149,23 @@ Endpoint:
 GET /
 ```
 
-Run:
+Configuration:
+
+* 50 virtual users
+* 30 second duration
+* No authentication required
+
+## Run the Test
 
 ```bash
 cd scaling-test
-
 k6 run load-test.js
+```
+
+Or with a custom URL:
+
+```bash
+URL=http://your-server:4000 k6 run load-test.js
 ```
 
 Expected behavior:
@@ -140,39 +177,57 @@ Expected behavior:
 
 ---
 
-# Test 2: Database Read Ramp Test
+# Step 3: Authenticated API Ramp Test
 
 Purpose:
 
-Gradually increase load from 10 to 100 concurrent users over approximately 2 minutes.
+Test authenticated API performance with session-based authentication.
+
+Gradually ramps from 0 to 100 concurrent users, sustains at 100 for 1 minute, then ramps down.
 
 Endpoint:
 
 ```text
+POST /api/auth/login
 GET /api/tasks?page=1&limit=50
 ```
 
-Run:
+Configuration:
+
+* Stage 1: 30s ramp to 100 VUs
+* Stage 2: 1m sustain at 100 VUs
+* Stage 3: 30s ramp to 0 VUs
+* Total duration: 2 minutes
+
+## Run the Test
 
 ```bash
 cd scaling-test
-
 k6 run ramp-load-test.js
+```
+
+Or with a custom URL:
+
+```bash
+URL=http://your-server:4000 k6 run ramp-load-test.js
 ```
 
 Expected behavior:
 
 Each virtual user:
 
-1. Attempts login
-2. Registers if login fails
-3. Obtains a session cookie
-4. Repeatedly requests paginated tasks
+1. Selects a random pre-generated test user
+2. Authenticates via POST to `/api/auth/login`
+3. Extracts session cookie from login response
+4. Makes authenticated GET request to `/api/tasks`
+5. Repeats for each iteration
 
 This test exercises:
 
-* Session validation
+* Session-based authentication
+* Session cookie handling
 * MySQL session storage
+* Authentication middleware
 * Task count queries
 * Paginated task queries
 * JSON serialization
