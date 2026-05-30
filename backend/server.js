@@ -27,22 +27,15 @@ const app = express();
 // Try to use Redis for session storage if available, fall back to MySQL
 let sessionStore;
 try {
-  const RedisStore = require("connect-redis").default;
+  const RedisStore = require("connect-redis")(session);
   const redis = require("redis");
   const redisClient = redis.createClient({
-    socket: {
-      host: process.env.REDIS_HOST || "localhost",
-      port: parseInt(process.env.REDIS_PORT || "6379"),
-    },
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379"),
   });
 
   redisClient.on('error', (err) => {
     console.log('Redis client error, falling back to MySQL:', err.message);
-  });
-
-  redisClient.connect().catch(err => {
-    console.log('Redis connection failed, falling back to MySQL:', err.message);
-    throw err;
   });
 
   sessionStore = new RedisStore({ client: redisClient });
