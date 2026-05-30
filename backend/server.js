@@ -27,7 +27,7 @@ const app = express();
 // Try to use Redis for session storage if available, fall back to MySQL
 let sessionStore;
 try {
-  const RedisStore = require("connect-redis").default;
+  const RedisStore = require("connect-redis");
   const redis = require("redis");
   const redisClient = redis.createClient({
     socket: {
@@ -40,12 +40,21 @@ try {
     console.log('Redis client error, falling back to MySQL:', err.message);
   });
 
+  redisClient.connect().catch(err => {
+    console.log('Redis connection failed, falling back to MySQL:', err.message);
+    throw err;
+  });
+
   sessionStore = new RedisStore({ client: redisClient });
-  console.log("Using Redis for session storage");
+  console.log("✓ Using Redis for session storage");
+  console.log(`  Redis host: ${process.env.REDIS_HOST || "localhost"}:${process.env.REDIS_PORT || "6379"}`);
 } catch (e) {
-  console.log("Redis not available, falling back to MySQL session storage");
-  console.log("To enable Redis: npm install connect-redis@4 redis");
+  console.log("✗ Redis not available, falling back to MySQL session storage");
+  console.log("  Error:", e.message);
+  console.log("  To enable Redis: Ensure redis is installed and running");
+  console.log("  Then set REDIS_HOST and REDIS_PORT environment variables");
   sessionStore = new MySQLStore({}, db.promise());
+  console.log("✓ Using MySQL for session storage");
 }
 
 /**
