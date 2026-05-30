@@ -27,7 +27,7 @@ const app = express();
 // Try to use Redis for session storage if available, fall back to MySQL
 let sessionStore;
 try {
-  const RedisStore = require("connect-redis");
+  const RedisStore = require("connect-redis").default;
   const redis = require("redis");
   const redisClient = redis.createClient({
     socket: {
