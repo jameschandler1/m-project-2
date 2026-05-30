@@ -34,23 +34,26 @@ function authenticate() {
     console.error(`[LOGIN FAIL] Status=${loginRes.status}, Body=${loginRes.body}`);
   }
 
-  // Extract session cookie from login response
-  let sessionCookie = null;
-  if (loginRes.cookies && loginRes.cookies.sid && loginRes.cookies.sid.length > 0) {
-    sessionCookie = `sid=${loginRes.cookies.sid[0].value}`;
+  // Extract JWT token from login response
+  let token = null;
+  try {
+    const body = JSON.parse(loginRes.body);
+    token = body.token;
+  } catch (e) {
+    console.error(`[LOGIN PARSE ERROR] ${e.message}`);
   }
 
-  return { loginRes, sessionCookie };
+  return { loginRes, token };
 }
 
 export default function () {
   // Authenticate first
-  const { loginRes, sessionCookie } = authenticate();
+  const { loginRes, token } = authenticate();
 
-  // Make authenticated request to tasks endpoint with session cookie
+  // Make authenticated request to tasks endpoint with JWT token
   const headers = {};
-  if (sessionCookie) {
-    headers.Cookie = sessionCookie;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const response = http.get(`${BASE_URL}/api/tasks?page=1&limit=50`, {
@@ -63,8 +66,7 @@ export default function () {
 
   if (response.status !== 200) {
     console.error(`[TASKS FAIL] Status=${response.status}, Body=${response.body}`);
-    console.error(`[DEBUG] Session cookie: ${sessionCookie}`);
+    console.error(`[DEBUG] Token: ${token ? token.substring(0, 20) + '...' : 'null'}`);
     console.error(`[DEBUG] Login status: ${loginRes.status}`);
-    console.error(`[DEBUG] Tasks response cookies: ${JSON.stringify(response.cookies)}`);
   }
 }

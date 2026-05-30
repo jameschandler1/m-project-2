@@ -12,18 +12,8 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/user");
+const { generateToken, authenticateToken } = require("../middleware/jwt");
 const router = express.Router();
-
-function logSessionCookie(req, context = "auth") {
-  if (process.env.DEBUG_LOG_SESSION_COOKIE !== "true") {
-    return;
-  }
-
-  const sessionId = req.sessionID || "unknown";
-  console.log(
-    `[${context}] session cookie debug: sid=${sessionId}, userId=${req.session.userId || "none"}`,
-  );
-}
 
 /**
  * Register a new user
@@ -69,12 +59,19 @@ router.post(
       // Create new user and get their ID
       const userId = await User.create(email, password);
 
-      // Automatically log in the new user by setting session
-      req.session.userId = userId;
-      logSessionCookie(req, "register");
+      // Generate JWT token
+      const token = generateToken(userId);
 
-      // Return user information (excluding sensitive data)
-      res.json({ id: userId, email });
+      // Set token as cookie for frontend compatibility
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: false, // change to true when HTTPS is enabled
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 // 1 hour
+      });
+
+      // Return user information and token
+      res.json({ id: userId, email, token });
     } catch (e) {
       console.error("Registration error:", e);
       res.status(500).json({ error: "Registration failed" });
@@ -124,12 +121,19 @@ router.post(
       const valid = await User.verifyPassword(user, password);
       if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
-      // Create session for authenticated user
-      req.session.userId = user.id;
-      logSessionCookie(req, "login");
+      // Generate JWT token
+      const token = generateToken(user.id);
 
-      // Return user information (excluding sensitive data)
-      res.json({ id: user.id, email: user.email });
+      // Set token as cookie for frontend compatibility
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: false, // change to true when HTTPS is enabled
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 // 1 hour
+      });
+
+      // Return user information and token
+      res.json({ id: user.id, email: user.email, token });
     } catch (e) {
       console.error("Login error:", e);
       res.status(500).json({ error: "Login failed" });
@@ -142,27 +146,20 @@ router.post(
  *
  * POST /api/auth/logout
  *
- * Destroys the user's session and clears the session cookie
+ * Clears the token cookie
  *
  * Response:
  * - 200: Success message
  */
 router.post("/logout", (req, res) => {
-  // Destroy the session on the server
-  req.session.destroy(() => {
-    // Clear the session cookie from the client
-    res.clearCookie("sid");
-    res.json({ message: "Logged out" });
-  });
+  // Clear the token cookie from the client
+  res.clearCookie("token");
+  res.json({ message: "Logged out" });
 });
 
-router.get("/me", async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-
+router.get("/me", authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId);
+    const user = await User.findById(req.userId);
 
     if (!user) {
       return res.status(401).json({ error: "User not found" });

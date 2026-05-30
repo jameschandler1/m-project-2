@@ -17,14 +17,10 @@ require('dotenv').config({
   path: path.join(__dirname, '.env')
 });
 const express = require("express");
-const session = require("express-session");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const MySQLStore = require("express-mysql-session")(session);
 
 const db = require("./db");
-
-// Create MySQL-based session store
-const sessionStore = new MySQLStore({}, db.promise());
 
 /**
  * CORS Configuration
@@ -37,9 +33,9 @@ const corsOrigins = process.env.CORS_ORIGINS
   : ['http://localhost:3000','http://localhost:3001','https://18.119.176.95:3000','https://18.119.176.95:3001'];
 
 // Validate required environment variable
-if (!process.env.SESSION_SECRET) {
-  console.error('ERROR: SESSION_SECRET environment variable is required');
-  console.error('Please set SESSION_SECRET in your environment or .env file');
+if (!process.env.JWT_SECRET && !process.env.SESSION_SECRET) {
+  console.error('ERROR: JWT_SECRET or SESSION_SECRET environment variable is required');
+  console.error('Please set JWT_SECRET in your environment or .env file');
   process.exit(1);
 }
 
@@ -66,30 +62,8 @@ app.use(
 // This middleware parses incoming JSON payloads and makes them available in req.body
 app.use(express.json());
 
-/**
- * Session Configuration
- *
- * Configures session management using MySQL.
- * Sessions persist across server restarts and can be shared by multiple instances.
- */
-
-// Configure session middleware
-app.use(
-  session({
-    key: "sid",
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: sessionStore,
-    rolling: true,
-    cookie: {
-      httpOnly: true,
-      secure: false, // change to true only when HTTPS is enabled
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60,
-    },
-  })
-);
+// Parse cookies for JWT token
+app.use(cookieParser());
 
 /**
  * API Routes
