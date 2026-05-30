@@ -1,7 +1,7 @@
 import http from "k6/http";
 import { check } from "k6";
 
-const BASE_URL = __ENV.URL || "http://18.119.176.95:3000";
+const BASE_URL = __ENV.URL || "http://18.119.176.95:4000";
 const USER_COUNT = 100;
 const PASSWORD = "Password123";
 
