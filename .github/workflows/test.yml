@@ -23,6 +23,10 @@ jobs:
         working-directory: ./backend
         run: npm install
 
+      - name: Run ESLint
+        working-directory: ./backend
+        run: npx eslint .
+
       - name: Run Jest Tests
         working-directory: ./backend
         run: npm test

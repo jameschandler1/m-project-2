@@ -4,7 +4,7 @@
  * Tests for email and password validation logic
  */
 
-const { body, validationResult } = require('express-validator');
+const { body } = require('express-validator');
 
 describe('Email Validation', () => {
   test('should accept valid email addresses', () => {
