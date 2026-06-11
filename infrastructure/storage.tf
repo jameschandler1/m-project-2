@@ -9,6 +9,7 @@ resource "aws_s3_bucket" "media" {
   bucket = "didyoudoityet-media"
 
   tags = {
-    Name = "didyoudoityet-media"
+    Name    = "didyoudoityet-media"
+    Purpose = "Media Storage"
   }
 }
