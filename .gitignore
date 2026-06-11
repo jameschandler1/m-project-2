@@ -77,3 +77,39 @@ backend/uploads/
 .env
 .env.local 
 backend/.env/
+
+
+# ======================================
+# Terraform
+# ======================================
+
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lock file
+# Uncomment if you intentionally don't want to commit it.
+# I recommend COMMITTING it for this project.
+# .terraform.lock.hcl
+
+# Variable files
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# ======================================
+# AWS
+# ======================================
+
+.aws/
+
+# ======================================
+# macOS
+# ======================================
+
+.DS_Store
