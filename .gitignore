@@ -116,3 +116,7 @@ override.tf.json
 
 # misc
 infrastructure/ec2.json
+
+# Terraform local backend files
+**/.terraform/
+**/.terraform.tfstate.lock.info
