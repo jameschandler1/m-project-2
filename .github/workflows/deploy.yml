@@ -17,14 +17,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy over SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-
-      - name: Deploy to EC2
+      - name: Setup SSH Key
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key_path: /tmp/ssh_key
+          port: 22
+          script: |
             cd /opt/didyoudoityet
             git pull origin main
             npm ci
@@ -36,4 +41,3 @@ jobs:
             npm run build
             cd ..
             pm2 restart ecosystem.config.js --update-env
-          ENDSSH
