@@ -40,5 +40,11 @@
     "concurrently": "^9.2.1",
     "eslint": "^9.39.4",
     "globals": "^17.6.0"
-  }
+  },
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "frontend-sld"
+  ]
 }

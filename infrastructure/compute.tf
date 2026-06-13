@@ -27,6 +27,11 @@ resource "aws_instance" "app" {
     data.aws_security_group.launch_wizard.id
   ]
 
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+
   tags = {
     Name    = "didyoudoityet"
     Purpose = "Application Server"
