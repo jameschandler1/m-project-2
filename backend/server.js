@@ -104,4 +104,8 @@ app.get("/", (req, res) => res.send("API running"));
  * Uses environment variable PORT or defaults to 4000.
  */
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const HOST = process.env.HOST || "127.0.0.1";
+
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
+});
