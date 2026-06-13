@@ -31,17 +31,13 @@ jobs:
 
             git pull origin main
 
-            # Install all workspace dependencies
             npm ci
 
-            # Build the React frontend
             cd frontend
             npm run build
             sudo cp -r build/* /var/www/didyoudoityet/
 
-            # Build the second frontend
             cd ../frontend-sld
             npm run build
 
-            # Restart the backend
             pm2 restart all

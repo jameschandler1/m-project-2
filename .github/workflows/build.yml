@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  build-react:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,23 +17,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            backend/package-lock.json
-            frontend/package-lock.json
-            frontend-sld/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install React Dependencies
-        working-directory: ./frontend
+      - name: Install Workspace Dependencies
         run: npm ci
 
       - name: Build React Application
         working-directory: ./frontend
         run: npm run build
-
-      - name: Install Solid Dependencies
-        working-directory: ./frontend-sld
-        run: npm ci
 
       - name: Build Solid Application
         working-directory: ./frontend-sld

@@ -18,8 +18,8 @@
     "setup-solid": "cd frontend-sld && npm install",
     "setup-all": "npm run setup-backend && npm run setup-backend-py && npm run setup-frontend && npm run setup-solid",
     "install-all": "npm run setup-all",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint backend"
+    "lint": "eslint backend",
+    "test": "npm test --workspace=backend"
   },
   "keywords": [],
   "author": "",
@@ -36,11 +36,10 @@
     "mysql2": "^3.22.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "concurrently": "^9.2.1",
-    "eslint": "^9.39.4",
-    "globals": "^17.6.0"
-  },
+  "concurrently": "^9.2.1",
+  "eslint": "^8.57.1",
+  "globals": "^17.6.0"
+},
   "private": true,
   "workspaces": [
     "backend",
