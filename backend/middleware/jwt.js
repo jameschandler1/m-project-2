@@ -39,8 +39,13 @@ function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Invalid token' });
     }
 
-    req.userId = decoded.userId;
-    next();
+    req.user = {
+  id: decoded.userId
+};
+// Temporary backwards compatibility
+req.userId = decoded.userId;
+
+next();
   });
 }
 

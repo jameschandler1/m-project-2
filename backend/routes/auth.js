@@ -159,7 +159,7 @@ router.post("/logout", (req, res) => {
 
 router.get("/me", authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(401).json({ error: "User not found" });
