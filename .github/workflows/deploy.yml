@@ -28,15 +28,20 @@ jobs:
           port: 22
           script: |
             cd ~/m-project-2
+
             git pull origin main
-            cd backend
-            npm install
-            cd ../frontend
-            npm install
+
+            # Install all workspace dependencies
+            npm ci
+
+            # Build the React frontend
+            cd frontend
             npm run build
             sudo cp -r build/* /var/www/didyoudoityet/
+
+            # Build the second frontend
             cd ../frontend-sld
-            npm install
             npm run build
-            cd ~/m-project-2/backend
+
+            # Restart the backend
             pm2 restart all

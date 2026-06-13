@@ -19,22 +19,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            backend/package-lock.json
-            frontend/package-lock.json
-            frontend-sld/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install Root Dependencies
-        run: npm ci
-
-      - name: Install Backend Dependencies
-        working-directory: ./backend
+      - name: Install Workspace Dependencies
         run: npm ci
 
       - name: Run ESLint
         run: npm run lint
 
       - name: Run Jest Tests
-        working-directory: ./backend
-        run: npm test
+        run: npm test --workspace=backend
