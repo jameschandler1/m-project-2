@@ -40,12 +40,10 @@ function authenticateToken(req, res, next) {
     }
 
     req.user = {
-  id: decoded.userId
-};
-// Temporary backwards compatibility
-req.userId = decoded.userId;
+      id: decoded.userId
+    };
 
-next();
+    next();
   });
 }
 
