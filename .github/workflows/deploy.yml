@@ -30,14 +30,16 @@ jobs:
           key_path: /tmp/ssh_key
           port: 22
           script: |
-            cd /opt/didyoudoityet
+            cd ~/m-project-2
             git pull origin main
-            npm ci
-            cd frontend
-            npm ci
+            cd backend
+            npm install
+            cd ../frontend
+            npm install
             npm run build
+            sudo cp -r build/* /var/www/didyoudoityet/
             cd ../frontend-sld
-            npm ci
+            npm install
             npm run build
-            cd ..
-            pm2 restart ecosystem.config.js --update-env
+            cd ~/m-project-2/backend
+            pm2 restart didyoudoityet-api --update-env
