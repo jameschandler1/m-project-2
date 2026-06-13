@@ -42,4 +42,4 @@ jobs:
             npm install
             npm run build
             cd ~/m-project-2/backend
-            pm2 restart didyoudoityet-api --update-env
+            pm2 restart all
