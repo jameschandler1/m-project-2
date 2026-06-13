@@ -16,10 +16,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            frontend-sld/package-lock.json
 
       - name: Install React Dependencies
         working-directory: ./frontend
-        run: npm install
+        run: npm ci
 
       - name: Build React Application
         working-directory: ./frontend
@@ -27,7 +33,7 @@ jobs:
 
       - name: Install Solid Dependencies
         working-directory: ./frontend-sld
-        run: npm install
+        run: npm ci
 
       - name: Build Solid Application
         working-directory: ./frontend-sld
