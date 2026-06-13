@@ -74,42 +74,10 @@ npm install
 npm run dev     # Solid.js frontend on http://localhost:3001
 ```
 
-### Option 3: Flask Backend + React Frontend
 
-```bash
-# Setup Flask backend
-cd backend-py
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
 
-# Start Flask backend
-python app.py  # Backend on http://localhost:4000
 
-# In another terminal, start React frontend
-cd ../frontend
-npm start  # React frontend on http://localhost:3000
-```
 
-### Option 4: Flask Backend + Solid.js Frontend
-
-```bash
-# Setup Flask backend
-cd backend-py
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Start Flask backend
-python app.py  # Backend on http://localhost:4000
-
-# In another terminal, start Solid.js frontend
-cd ../frontend-sld
-npm install
-npm run dev     # Solid.js frontend on http://localhost:3001
-```
-
-## Available Scripts
 
 ### Root Package Scripts
 
@@ -120,14 +88,6 @@ npm run dev        # Start both Node.js backend and React frontend concurrently
 npm run dev-solid  # Start both Node.js backend and Solid.js frontend concurrently
 npm run solid      # Start Solid.js frontend only
 npm test           # Run tests (placeholder)
-```
-
-### Flask Backend Commands
-
-```bash
-cd backend-py
-source venv/bin/activate
-python app.py      # Start Flask backend on http://localhost:4000
 ```
 
 ### Frontend Commands
@@ -214,13 +174,6 @@ npm install
 npm run dev
 ```
 
-### Flask Backend Development
-```bash
-cd backend-py
-source venv/bin/activate
-pip install -r requirements.txt
-python app.py
-```
 
 ### Frontend Development
 ```bash
@@ -241,14 +194,6 @@ npm install -g pm2
 pm2 start backend/server.js --name "taskapp-backend"
 ```
 
-### Flask Backend
-```bash
-cd backend-py
-source venv/bin/activate
-pip install gunicorn
-gunicorn --bind 0.0.0.0:4000 --timeout 300 app:app
-```
-
 ### Frontend
 
 **React Frontend:**
@@ -265,6 +210,9 @@ npm run build
 npm run preview  # Preview production build
 # Serve the dist directory with nginx or Apache
 ```
+
+
+
 
 ## Troubleshooting
 
@@ -286,11 +234,7 @@ npm run preview  # Preview production build
    - Set proper database credentials
    - Generate a secure SESSION_SECRET
 
-4. **Flask Backend Issues**
-   - Activate virtual environment: `source venv/bin/activate`
-   - Install dependencies: `pip install -r requirements.txt`
-   - Check Python version (3.8+ required)
-
+4. 
 ## Security Features
 
 - **Password Hashing**: bcrypt with 10 salt rounds
