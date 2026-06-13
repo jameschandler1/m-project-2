@@ -1,10 +1,6 @@
-###############################################
-# Application Security Group
-###############################################
-
 resource "aws_security_group" "app" {
-  name        = "didyoudoityet-app"
-  description = "Production application security group"
+  name        = "launch-wizard-2"
+  description = "launch-wizard-2 created 2026-04-14T03:40:22.357Z"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -12,10 +8,7 @@ resource "aws_security_group" "app" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-
-    cidr_blocks = [
-      "24.113.96.177/32"
-    ]
+    cidr_blocks = ["24.113.96.177/32"]
   }
 
   ingress {
@@ -41,9 +34,7 @@ resource "aws_security_group" "app" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name      = "didyoudoityet-app"
-    ManagedBy = "Terraform"
-    Project   = "didyoudoityet"
+  lifecycle {
+    prevent_destroy = true
   }
 }

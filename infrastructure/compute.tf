@@ -24,7 +24,6 @@ resource "aws_instance" "app" {
   iam_instance_profile = "didyoudoityetEC2S3Role"
 
   vpc_security_group_ids = [
-    data.aws_security_group.todo.id,
     data.aws_security_group.launch_wizard.id
   ]
 
