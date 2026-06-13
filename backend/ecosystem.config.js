@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "didyoudoityet-api",
       script: "server.js",
-      cwd: "/home/ubuntu/m-project-2/backend",
+      cwd: process.env.APP_DIR || "/opt/didyoudoityet/backend",
       instances: 1,
       exec_mode: "fork",
       env: {
