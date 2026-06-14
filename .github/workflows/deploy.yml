@@ -31,13 +31,14 @@ jobs:
 
             git pull origin main
 
-            npm ci
+            npm ci || exit 1
 
             cd frontend
-            npm run build
+            npm run build || exit 1
             sudo cp -r build/* /var/www/didyoudoityet/
 
             cd ../frontend-sld
-            npm run build
+            npm run build || exit 1
 
-            pm2 restart all
+            pm2 restart didyoudoityet-api
+            pm2 save
