@@ -29,6 +29,8 @@ jobs:
           script: |
             cd ~/m-project-2
 
+            pm2 stop didyoudoityet-api || true
+
             git pull origin main
 
             npm ci || exit 1
@@ -40,5 +42,7 @@ jobs:
             cd ../frontend-sld
             npm run build || exit 1
 
-            pm2 restart didyoudoityet-api
+            cd ..
+
+            pm2 start didyoudoityet-api
             pm2 save
