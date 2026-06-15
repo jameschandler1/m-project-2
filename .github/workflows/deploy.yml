@@ -35,7 +35,10 @@ jobs:
             
             rm -rf node_modules
 
-            npm ci || exit 1
+            echo "Checking..."
+            ls -ld node_modules || echo "node_modules does not exist"
+
+            npm ci
 
             cd frontend
             npm run build || exit 1
