@@ -32,6 +32,8 @@ jobs:
             pm2 stop didyoudoityet-api || true
 
             git pull origin main
+            
+            rm -rf node_modules
 
             npm ci || exit 1
 
