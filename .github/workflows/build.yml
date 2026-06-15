@@ -29,3 +29,7 @@ jobs:
       - name: Build Solid Application
         working-directory: ./frontend-sld
         run: npm run build
+
+      - name: Build HTMX Application
+        working-directory: ./frontend-htmx
+        run: npm run build

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager</title>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Content will be loaded here based on authentication state -->
+  </div>
+
+  <script>
+    // Check authentication status on load
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuth();
+    });
+
+    function checkAuth() {
+      fetch('/api/auth/me', {
+        credentials: 'include'
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Not authenticated');
+        return res.json();
+      })
+      .then(data => {
+        loadDashboard(data);
+      })
+      .catch(() => {
+        loadLogin();
+      });
+    }
+
+    function loadLogin() {
+      fetch('/login')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+        });
+    }
+
+    function loadDashboard(user) {
+      fetch('/dashboard')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+          checkPaymentStatus();
+        });
+    }
+
+    function checkPaymentStatus() {
+      fetch('/api/payment/status', {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.isPaywalled) {
+          loadPayment();
+        }
+      })
+      .catch(() => {
+        // Stay on dashboard if payment check fails
+      });
+    }
+
+    function loadPayment() {
+      fetch('/payment')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+          initStripe();
+        });
+    }
+
+    function initStripe() {
+      fetch('/api/payment/create-pay-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ amount: 1 })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.clientSecret) {
+          const stripe = Stripe('pk_test_YOUR_STRIPE_KEY'); // Replace with actual key
+          const elements = stripe.elements({
+            clientSecret: data.clientSecret,
+            appearance: { theme: 'stripe' }
+          });
+
+          const paymentElement = elements.create('payment');
+          paymentElement.mount('#payment-element');
+
+          document.getElementById('payment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await stripe.confirmPayment({
+              elements,
+              confirmParams: {
+                return_url: window.location.origin,
+              },
+              redirect: 'if_required',
+            });
+
+            if (error) {
+              document.getElementById('payment-message').textContent = error.message;
+            } else {
+              // Payment successful
+              checkAuth();
+            }
+          });
+        }
+      });
+    }
+
+    function handleLogin(mode) {
+      const email = document.getElementById('e-input').value;
+      const password = document.getElementById('p-input').value;
+
+      fetch(`/api/auth/${mode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('login-error').textContent = data.error;
+        } else {
+          checkAuth();
+        }
+      })
+      .catch(err => {
+        document.getElementById('login-error').textContent = 'Authentication failed';
+      });
+    }
+
+    function handleLogout() {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      .then(() => {
+        loadLogin();
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<div class="dashboard-container">
+  <h2 class="dtitle">Task Dashboard</h2>
+
+  <div class="payment-status-bar" id="payment-status-bar">
+    <span class="payment-status-free">Loading...</span>
+  </div>
+
+  <div id="paywall-warning" class="paywall-warning" style="display: none;">
+    ⚠️ You've reached your free task limit. Upgrade to continue creating tasks.
+  </div>
+
+  <div class="filter-buttons">
+    <button class="active" data-filter="all" onclick="setFilter('all')">All Tasks</button>
+    <button data-filter="dueSoon" onclick="setFilter('dueSoon')">Due Soon</button>
+    <button data-filter="completed" onclick="setFilter('completed')">Completed</button>
+  </div>
+
+  <div class="pagination-controls">
+    <button id="prev-page" onclick="changePage(-1)" disabled>Previous</button>
+    <span id="page-info">Page 1 of 1 (0 total tasks)</span>
+    <button id="next-page" onclick="changePage(1)" disabled>Next</button>
+  </div>
+
+  <h3 class="dnt-title" id="form-title">Add New Task</h3>
+  <form class="dform" id="task-form" onsubmit="event.preventDefault(); handleSubmit();">
+    <input
+      type="text"
+      id="task-title"
+      placeholder="Title"
+      required
+    />
+    <input
+      type="date"
+      id="task-due-date"
+      required
+    />
+    <textarea
+      id="task-description"
+      placeholder="Description"
+    ></textarea>
+    
+    <div class="file-upload-section" style="margin: 10px 0;">
+      <label for="task-file" style="display: block; margin-bottom: 5px;">
+        Attach file (optional):
+      </label>
+      <input
+        id="task-file"
+        type="file"
+        accept="image/*,video/*"
+      />
+      <div id="file-info" style="font-size: 14px; color: #666;"></div>
+    </div>
+    
+    <button type="submit" id="submit-btn">Add Task</button>
+    <button type="button" id="cancel-btn" style="display: none;" onclick="cancelEdit()">Cancel</button>
+  </form>
+
+  <div id="form-error" class="error"></div>
+  <div id="upload-error" class="error" style="margin-top: 10px;"></div>
+
+  <h3 class="dtl-title" id="list-title">All Tasks</h3>
+  <div id="tasks-container">
+    <div>Loading...</div>
+  </div>
+
+  <button class="dlog-btn" onclick="handleLogout()">Logout</button>
+</div>
+
+<script>
+  let currentPage = 1;
+  let totalPages = 1;
+  let totalTasks = 0;
+  let currentFilter = 'all';
+  let editingTaskId = null;
+  let paymentStatus = {
+    paymentStatus: 'free',
+    tasksCreated: 0,
+    freeTasksRemaining: 3,
+    isPaywalled: false
+  };
+
+  // Load payment status and tasks on mount
+  loadPaymentStatus();
+  loadTasks();
+
+  function loadPaymentStatus() {
+    fetch('/api/payment/status', {
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      paymentStatus = data;
+      updatePaymentUI();
+    })
+    .catch(() => {
+      // Keep default status on error
+    });
+  }
+
+  function updatePaymentUI() {
+    const statusBar = document.getElementById('payment-status-bar');
+    const paywallWarning = document.getElementById('paywall-warning');
+    const taskForm = document.getElementById('task-form');
+
+    if (paymentStatus.paymentStatus === 'paid') {
+      statusBar.innerHTML = '<span class="payment-status-paid">✓ Premium Account - Unlimited Tasks</span>';
+      paywallWarning.style.display = 'none';
+      taskForm.style.display = 'flex';
+    } else {
+      statusBar.innerHTML = `<span class="payment-status-free">Free Tasks Remaining: ${paymentStatus.freeTasksRemaining} / 3</span>`;
+      
+      if (paymentStatus.isPaywalled) {
+        paywallWarning.style.display = 'block';
+        if (!editingTaskId) {
+          taskForm.style.display = 'none';
+        }
+      } else {
+        paywallWarning.style.display = 'none';
+        taskForm.style.display = 'flex';
+      }
+    }
+  }
+
+  function loadTasks() {
+    const container = document.getElementById('tasks-container');
+    container.innerHTML = '<div>Loading...</div>';
+
+    fetch(`/api/tasks?page=${currentPage}&limit=50`, {
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      let tasks = [];
+      if (Array.isArray(data)) {
+        tasks = data;
+      } else if (data?.tasks) {
+        tasks = data.tasks;
+        if (data.pagination) {
+          currentPage = data.pagination.page;
+          totalPages = data.pagination.totalPages;
+          totalTasks = data.pagination.total;
+        }
+      }
+
+      updatePagination();
+      renderTasks(tasks);
+      loadMediaFiles(tasks);
+    })
+    .catch(() => {
+      container.innerHTML = '<div class="error">Failed to load tasks</div>';
+    });
+  }
+
+  function loadMediaFiles(tasks) {
+    tasks.forEach(task => {
+      fetch(`/api/upload/${task.id}`, {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const mediaContainer = document.getElementById(`media-${task.id}`);
+          if (mediaContainer) {
+            renderMedia(mediaContainer, data.media, task.id);
+          }
+        }
+      })
+      .catch(() => {
+        // Ignore media load errors
+      });
+    });
+  }
+
+  function renderMedia(container, mediaList, taskId) {
+    if (!mediaList || mediaList.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = '<strong>Media:</strong><div style="display: flex; flex-wrap: wrap; gap: 5px;"></div>';
+    const wrapper = container.querySelector('div');
+
+    mediaList.forEach(media => {
+      const div = document.createElement('div');
+      div.style.position = 'relative';
+
+      if (media.file_type.startsWith('image/')) {
+        div.innerHTML = `<img class="media-image" src="/api/upload/file/${media.task_id}/${media.id}" alt="${media.filename}">`;
+      } else if (media.file_type.startsWith('video/')) {
+        div.innerHTML = `<video class="media-video" controls><source src="/api/upload/file/${media.task_id}/${media.id}" type="${media.file_type}">Your browser does not support the video tag.</video>`;
+      }
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '×';
+      deleteBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;';
+      deleteBtn.onclick = () => deleteMedia(media.id, taskId);
+
+      div.appendChild(deleteBtn);
+      wrapper.appendChild(div);
+    });
+  }
+
+  function deleteMedia(mediaId, taskId) {
+    fetch(`/api/upload/${mediaId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        loadTasks(); // Reload to refresh media
+      } else {
+        document.getElementById('upload-error').textContent = data.error || 'Delete failed';
+      }
+    })
+    .catch(() => {
+      document.getElementById('upload-error').textContent = 'Delete failed. Please try again.';
+    });
+  }
+
+  function renderTasks(tasks) {
+    const container = document.getElementById('tasks-container');
+    const filteredTasks = filterTasks(tasks);
+
+    if (filteredTasks.length === 0) {
+      container.innerHTML = '<div style="margin: 20px;">No tasks found</div>';
+      return;
+    }
+
+    container.innerHTML = '<ul></ul>';
+    const ul = container.querySelector('ul');
+
+    filteredTasks.forEach(task => {
+      const li = document.createElement('li');
+      li.className = 'dtask';
+
+      const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : '';
+
+      li.innerHTML = `
+        <input class="check" type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleComplete(${task.id}, this.checked)">
+        <span class="dcat-lab">Due: ${dueDate}</span><br>
+        <strong class="task" style="text-decoration: ${task.completed ? 'line-through' : 'none'}">Task: ${task.title}</strong><br>
+        ${task.description ? `<span class="desc">Description: ${task.description}<br></span>` : ''}
+        <div id="media-${task.id}" class="media-container" style="margin: 10px 0;"></div>
+        <div class="upload-section" style="margin: 10px 0;">
+          <input type="file" accept="image/*,video/*" onchange="uploadFile(${task.id}, this.files[0])" style="margin: 5px 0;">
+        </div><br>
+        <span class="d-btn-span">
+          <button onclick="editTask(${task.id})">Edit</button>
+          <button onclick="deleteTask(${task.id})">Delete</button>
+        </span>
+      `;
+
+      ul.appendChild(li);
+    });
+  }
+
+  function filterTasks(tasks) {
+    const now = new Date();
+
+    return tasks.filter(task => {
+      switch (currentFilter) {
+        case 'completed':
+          return task.completed;
+        case 'dueSoon':
+          if (task.completed || !task.due_date) return false;
+          const dueDate = new Date(task.due_date);
+          const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
+          return hoursUntilDue <= 24 && hoursUntilDue > -24;
+        default:
+          return true;
+      }
+    });
+  }
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    
+    // Update button states
+    document.querySelectorAll('.filter-buttons button').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.filter === filter) {
+        btn.classList.add('active');
+      }
+    });
+
+    // Update title
+    const titles = {
+      all: 'All Tasks',
+      dueSoon: 'Due Soon',
+      completed: 'Completed'
+    };
+    document.getElementById('list-title').textContent = titles[filter];
+
+    // Re-render tasks
+    loadTasks();
+  }
+
+  function updatePagination() {
+    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages} (${totalTasks} total tasks)`;
+    document.getElementById('prev-page').disabled = currentPage <= 1;
+    document.getElementById('next-page').disabled = currentPage >= totalPages;
+  }
+
+  function changePage(delta) {
+    currentPage += delta;
+    loadTasks();
+  }
+
+  function handleSubmit() {
+    const title = document.getElementById('task-title').value;
+    const dueDate = document.getElementById('task-due-date').value;
+    const description = document.getElementById('task-description').value;
+    const fileInput = document.getElementById('task-file');
+    const errorDiv = document.getElementById('form-error');
+
+    errorDiv.textContent = '';
+
+    const method = editingTaskId ? 'PUT' : 'POST';
+    const url = editingTaskId ? `/api/tasks/${editingTaskId}` : '/api/tasks';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ title, due_date: dueDate, description })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to save task');
+      return res.json();
+    })
+    .then(data => {
+      const taskId = editingTaskId || data.id;
+
+      // Upload file if provided (only for new tasks)
+      if (!editingTaskId && fileInput.files[0]) {
+        uploadFile(taskId, fileInput.files[0]).then(() => {
+          resetForm();
+          loadTasks();
+          loadPaymentStatus();
+        });
+      } else {
+        resetForm();
+        loadTasks();
+        loadPaymentStatus();
+      }
+    })
+    .catch(err => {
+      errorDiv.textContent = err.message;
+    });
+  }
+
+  function uploadFile(taskId, file) {
+    if (!file) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('task_id', taskId);
+
+      fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('upload-error').textContent = '';
+          resolve();
+        } else {
+          document.getElementById('upload-error').textContent = data.error || 'Upload failed';
+          reject(data.error);
+        }
+      })
+      .catch(() => {
+        document.getElementById('upload-error').textContent = 'Upload failed. Please try again.';
+        reject('Upload failed');
+      });
+    });
+  }
+
+  function editTask(taskId) {
+    // Find the task data
+    fetch(`/api/tasks?page=${currentPage}&limit=50`, {
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      let tasks = Array.isArray(data) ? data : (data?.tasks || []);
+      const task = tasks.find(t => t.id === taskId);
+      
+      if (task) {
+        editingTaskId = taskId;
+        document.getElementById('form-title').textContent = 'Edit Task';
+        document.getElementById('task-title').value = task.title;
+        document.getElementById('task-due-date').value = task.due_date ? task.due_date.slice(0, 10) : '';
+        document.getElementById('task-description').value = task.description || '';
+        document.getElementById('submit-btn').textContent = 'Update';
+        document.getElementById('cancel-btn').style.display = 'inline-block';
+        
+        // Hide file upload for editing
+        document.querySelector('.file-upload-section').style.display = 'none';
+        
+        // Ensure form is visible even if paywalled
+        document.getElementById('task-form').style.display = 'flex';
+      }
+    });
+  }
+
+  function cancelEdit() {
+    resetForm();
+  }
+
+  function resetForm() {
+    editingTaskId = null;
+    document.getElementById('form-title').textContent = 'Add New Task';
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-due-date').value = '';
+    document.getElementById('task-description').value = '';
+    document.getElementById('task-file').value = '';
+    document.getElementById('file-info').textContent = '';
+    document.getElementById('submit-btn').textContent = 'Add Task';
+    document.getElementById('cancel-btn').style.display = 'none';
+    document.querySelector('.file-upload-section').style.display = 'block';
+    document.getElementById('form-error').textContent = '';
+    
+    // Re-check paywall status
+    updatePaymentUI();
+  }
+
+  function toggleComplete(taskId, completed) {
+    fetch(`/api/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ completed })
+    })
+    .then(() => {
+      loadTasks();
+    })
+    .catch(() => {
+      // Revert on error
+      loadTasks();
+    });
+  }
+
+  function deleteTask(taskId) {
+    if (!confirm('Delete this task?')) return;
+
+    fetch(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+    .then(() => {
+      loadTasks();
+      loadPaymentStatus();
+    })
+    .catch(() => {
+      document.getElementById('form-error').textContent = 'Failed to delete task';
+    });
+  }
+
+  function handleLogout() {
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    })
+    .then(() => {
+      checkAuth();
+    });
+  }
+
+  // File input change handler
+  document.getElementById('task-file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const fileInfo = document.getElementById('file-info');
+    if (file) {
+      fileInfo.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    } else {
+      fileInfo.textContent = '';
+    }
+  });
+</script>

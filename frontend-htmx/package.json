@@ -1,0 +1,19 @@
+{
+  "name": "frontend-htmx",
+  "version": "1.0.0",
+  "description": "HTMX frontend for task management app",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'Build complete - HTMX uses server-side rendering'",
+    "test": "echo 'No tests specified' && exit 0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3"
+  }
+}
