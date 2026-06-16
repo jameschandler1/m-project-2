@@ -4,10 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="stripe-publishable-key" content="">
+  <meta name="base-path" content="">
   <title>DidYouDoItYet?</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script src="https://js.stripe.com/v3/"></script>
-  <link rel="stylesheet" href="/styles.css">
+  <link id="theme-style" rel="stylesheet" href="/styles.css">
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const base =
+        document.querySelector('meta[name="base-path"]').content || "";
+
+        document
+              .getElementById("theme-style")
+              .setAttribute("href", `${base}/styles.css`);
+    });
+  </script>
 </head>
 <body>
   <div id="app">
@@ -29,6 +40,12 @@
     };
     let loginMode = 'login';
     let stripe, elements, clientSecret;
+
+    const BASE_PATH = document.querySelector('meta[name="base-path"]').content || '';
+
+    function api(path) {
+      return BASE_PATH + path;
+    }
 
     // Check authentication status on load
     document.addEventListener('DOMContentLoaded', function() {
@@ -157,51 +174,50 @@
     }
 
     function checkAuth() {
-      fetch('/api/auth/me', {
-        credentials: 'include'
-      })
-      .then(res => {
-        if (!res.ok) throw new Error('Not authenticated');
-        return res.json();
-      })
-      .then(data => {
-        loadDashboard(data);
-      })
-      .catch(() => {
-        loadLogin();
-      });
-    }
+  fetch(api('/api/auth/me'), {
+    credentials: 'include'
+  })
+    .then(res => {
+      if (!res.ok) throw new Error('Not authenticated');
+      return res.json();
+    })
+    .then(data => {
+      loadDashboard(data);
+    })
+    .catch(() => {
+      loadLogin();
+    });
+}
 
-    function loadLogin() {
-      fetch('/login')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('app').innerHTML = html;
-          loginMode = 'login';
-        });
-    }
+   function loadLogin() {
+  fetch(api('/login'))
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('app').innerHTML = html;
+      loginMode = 'login';
+    });
+}
 
-    function loadDashboard(user) {
-      fetch('/dashboard')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('app').innerHTML = html;
-          loadPaymentStatus();
-          loadTasks();
-        });
-    }
+   function loadDashboard(user) {
+  fetch(api('/dashboard'))
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('app').innerHTML = html;
+      loadPaymentStatus();
+      loadTasks();
+    });
+}
 
     function loadDashboardWithoutPaymentCheck() {
-      fetch('/dashboard')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('app').innerHTML = html;
-          loadPaymentStatus();
-          loadTasks();
-          // Poll payment status until it shows as paid (webhook doesn't work on localhost)
-          pollPaymentStatusUntilPaid();
-        });
-    }
+  fetch(api('/dashboard'))
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('app').innerHTML = html;
+      loadPaymentStatus();
+      loadTasks();
+      pollPaymentStatusUntilPaid();
+    });
+}
 
     function pollPaymentStatusUntilPaid() {
       let attempts = 0;
@@ -209,7 +225,7 @@
       
       const poll = setInterval(() => {
         attempts++;
-        fetch('/api/payment/status', {
+        fetch(api('/api/payment/status'), {
           credentials: 'include'
         })
         .then(res => res.json())
@@ -236,7 +252,7 @@
     }
 
     function checkPaymentStatusAndLoadPayment() {
-      fetch('/api/payment/status', {
+      fetch(api('/api/payment/status'), {
         credentials: 'include'
       })
       .then(res => res.json())
@@ -251,7 +267,7 @@
     }
 
     function loadPaymentStatus() {
-      fetch('/api/payment/status', {
+      fetch(api('/api/payment/status'), {
         credentials: 'include'
       })
       .then(res => res.json())
@@ -360,9 +376,9 @@
         div.style.position = 'relative';
 
         if (media.file_type.startsWith('image/')) {
-          div.innerHTML = `<img class="media-image" src="/api/upload/file/${media.task_id}/${media.id}" alt="${media.filename}">`;
+          div.innerHTML = `<img class="media-image" src="${BASE_PATH}/api/upload/file/${media.task_id}/${media.id}" alt="${media.filename}">`;
         } else if (media.file_type.startsWith('video/')) {
-          div.innerHTML = `<video class="media-video" controls><source src="/api/upload/file/${media.task_id}/${media.id}" type="${media.file_type}">Your browser does not support the video tag.</video>`;
+          div.innerHTML = `<video class="media-video" controls><source src="${BASE_PATH}/api/upload/file/${media.task_id}/${media.id}" type="${media.file_type}">Your browser does not support the video tag.</video>`;
         }
 
         const deleteBtn = document.createElement('button');
@@ -561,7 +577,7 @@
         formData.append('file', file);
         formData.append('task_id', taskId);
 
-        fetch('/api/upload', {
+        fetch(api('/api/upload'), {
           method: 'POST',
           body: formData,
           credentials: 'include'
@@ -747,7 +763,7 @@
     }
 
     function handleLogout() {
-      fetch('/api/auth/logout', {
+      fetch(api('/api/auth/logout'), {
         method: 'POST',
         credentials: 'include'
       })
@@ -757,7 +773,7 @@
     }
 
     function loadPayment() {
-      fetch('/payment')
+      fetch(api('/payment'))
         .then(res => res.text())
         .then(html => {
           document.getElementById('app').innerHTML = html;
@@ -770,7 +786,7 @@
       const stripeKey = document.querySelector('meta[name="stripe-publishable-key"]')?.content || 'pk_test_YOUR_STRIPE_KEY';
       console.log('Stripe key:', stripeKey);
       
-      fetch('/api/payment/create-pay-intent', {
+      fetch(api('/api/payment/create-pay-intent'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
