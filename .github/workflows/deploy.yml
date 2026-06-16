@@ -43,16 +43,9 @@ jobs:
           script: |
             cd ~/m-project-2
 
-            pm2 stop didyoudoityet-api || true
-
             git pull origin main
-            
-            rm -rf node_modules
 
-            echo "Checking..."
-            ls -ld node_modules || echo "node_modules does not exist"
-
-            npm ci
+            npm ci || exit 1
 
             cd frontend
             npm run build || exit 1
@@ -60,12 +53,8 @@ jobs:
 
             cd ../frontend-sld
             npm run build || exit 1
+            sudo cp -r dist/* /var/www/didyoudoityet-solid/
 
-            cd ../frontend-htmx
-            npm run build || exit 1
-            # HTMX is server-side rendered, no static files to copy
-
-            cd ..
-
-            pm2 start didyoudoityet-api
+            pm2 restart didyoudoityet-api
+            pm2 restart htmx
             pm2 save

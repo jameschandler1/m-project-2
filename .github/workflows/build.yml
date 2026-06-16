@@ -22,14 +22,14 @@ jobs:
       - name: Install Workspace Dependencies
         run: npm ci
 
-      - name: Build React Application
-        working-directory: ./frontend
+      - name: Build React
+        working-directory: frontend
         run: npm run build
 
-      - name: Build Solid Application
-        working-directory: ./frontend-sld
+      - name: Build Solid
+        working-directory: frontend-sld
         run: npm run build
 
-      - name: Build HTMX Application
-        working-directory: ./frontend-htmx
+      - name: Build HTMX
+        working-directory: frontend-htmx
         run: npm run build
