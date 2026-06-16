@@ -16,7 +16,9 @@
     "setup-backend-py": "cd backend-py && pip install -r requirements.txt",
     "setup-react": "cd frontend && npm install",
     "setup-solid": "cd frontend-sld && npm install",
-    "setup-all": "npm run setup-backend && npm run setup-backend-py && npm run setup-frontend && npm run setup-solid",
+    "setup-htmx": "cd frontend-htmx && npm install",
+    "htmx": "cd frontend-htmx && npm start",
+    "setup-all": "npm run setup-backend && npm run setup-backend-py && npm run setup-frontend && npm run setup-solid && npm run setup-htmx",
     "install-all": "npm run setup-all",
     "lint": "eslint backend",
     "test": "npm test --workspace=backend"
