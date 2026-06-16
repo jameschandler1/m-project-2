@@ -4,16 +4,30 @@ on:
   workflow_run:
     workflows:
       - Frontend Build Check
-      - Backend Tests
     types:
       - completed
+    branches:
+      - main
 
 jobs:
   deploy:
 
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
+      - name: Check Backend Tests Status
+        run: |
+          # Check if Backend Tests workflow also passed
+          backend_status=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?event=push&branch=main" | \
+            jq -r '.workflow_runs[] | select(.name=="Backend Tests") | .conclusion' | head -1)
+          
+          if [ "$backend_status" != "success" ]; then
+            echo "Backend Tests did not pass (status: $backend_status). Skipping deployment."
+            exit 1
+          fi
+
       - name: Setup SSH Key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/ssh_key
@@ -54,5 +68,4 @@ jobs:
             cd ..
 
             pm2 start didyoudoityet-api
-            pm2 start didyoudoityet-htmx
             pm2 save

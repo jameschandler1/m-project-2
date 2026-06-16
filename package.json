@@ -44,6 +44,7 @@
   "workspaces": [
     "backend",
     "frontend",
-    "frontend-sld"
+    "frontend-sld",
+    "frontend-htmx"
   ]
 }
