@@ -1,0 +1,67 @@
+<div class="dashboard-container">
+  <h2 class="dtitle">Task Dashboard</h2>
+
+  <div class="payment-status-bar" id="payment-status-bar">
+    <span class="payment-status-free">Loading...</span>
+  </div>
+
+  <div id="paywall-warning" class="paywall-warning" style="display: none;">
+    ⚠️ You've reached your free task limit. Upgrade to continue creating tasks.
+  </div>
+
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">All Tasks</button>
+    <button data-filter="dueSoon">Due Soon</button>
+    <button data-filter="completed">Completed</button>
+  </div>
+
+  <div class="pagination-controls">
+    <button id="prev-page" disabled>Previous</button>
+    <span id="page-info">Page 1 of 1 (0 total tasks)</span>
+    <button id="next-page" disabled>Next</button>
+  </div>
+
+  <h3 class="dnt-title" id="form-title">Add New Task</h3>
+  <form class="dform" id="task-form">
+    <input
+      type="text"
+      id="task-title"
+      placeholder="Title"
+      required
+    />
+    <input
+      type="date"
+      id="task-due-date"
+      required
+    />
+    <textarea
+      id="task-description"
+      placeholder="Description"
+    ></textarea>
+    
+    <div class="file-upload-section" style="margin: 10px 0;">
+      <label for="task-file" style="display: block; margin-bottom: 5px;">
+        Attach file (optional):
+      </label>
+      <input
+        id="task-file"
+        type="file"
+        accept="image/*,video/*"
+      />
+      <div id="file-info" style="font-size: 14px; color: #666;"></div>
+    </div>
+    
+    <button type="submit" id="submit-btn">Add Task</button>
+    <button type="button" id="cancel-btn" style="display: none;">Cancel</button>
+  </form>
+
+  <div id="form-error" class="error"></div>
+  <div id="upload-error" class="error" style="margin-top: 10px;"></div>
+
+  <h3 class="dtl-title" id="list-title">All Tasks</h3>
+  <div id="tasks-container">
+    <div>Loading...</div>
+  </div>
+
+  <button class="dlog-btn" id="logout-btn">Logout</button>
+</div>

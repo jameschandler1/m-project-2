@@ -90,6 +90,26 @@ http://localhost:3001
 
 ---
 
+# Running the HTMX Frontend
+
+**Run from:**
+
+```
+m-project-2/frontend-htmx/
+```
+
+```bash
+npm start
+```
+
+Available at:
+
+```
+http://localhost:3000
+```
+
+---
+
 # Running React + Backend
 
 Open two terminals.
@@ -138,6 +158,32 @@ m-project-2/frontend-sld/
 
 ```bash
 npm run dev
+```
+
+---
+
+# Running HTMX + Backend
+
+Open two terminals.
+
+Terminal 1
+
+```
+m-project-2/backend/
+```
+
+```bash
+npm run server
+```
+
+Terminal 2
+
+```
+m-project-2/frontend-htmx/
+```
+
+```bash
+npm start
 ```
 
 ---
@@ -328,6 +374,16 @@ npm run build
 
 ---
 
+Build HTMX:
+
+```bash
+cd ../frontend-htmx
+
+npm run build
+```
+
+---
+
 Restart backend:
 
 ```bash
@@ -338,7 +394,23 @@ pm2 restart all
 
 # PM2 Commands
 
-Start application:
+## Start Both Backend and HTMX Frontend (Recommended)
+
+Using ecosystem configuration:
+
+```bash
+cd ~/m-project-2/backend
+
+pm2 start ecosystem.config.js
+```
+
+This starts both:
+- didyoudoityet-api (backend on port 4000)
+- didyoudoityet-htmx (HTMX frontend on port 3000)
+
+## Start Individual Services
+
+Start backend only:
 
 ```bash
 cd ~/m-project-2/backend
@@ -346,7 +418,17 @@ cd ~/m-project-2/backend
 pm2 start server.js --name didyoudoityet-api
 ```
 
-Restart:
+Start HTMX frontend only:
+
+```bash
+cd ~/m-project-2/frontend-htmx
+
+pm2 start server.js --name didyoudoityet-htmx
+```
+
+## Restart Services
+
+Restart specific service:
 
 ```bash
 pm2 restart didyoudoityet-api
@@ -355,34 +437,76 @@ pm2 restart didyoudoityet-api
 or
 
 ```bash
+pm2 restart didyoudoityet-htmx
+```
+
+Restart all:
+
+```bash
 pm2 restart all
 ```
 
-Stop:
+## Stop Services
+
+Stop specific service:
 
 ```bash
 pm2 stop didyoudoityet-api
 ```
 
-Delete:
+or
+
+```bash
+pm2 stop didyoudoityet-htmx
+```
+
+Stop all:
+
+```bash
+pm2 stop all
+```
+
+## Delete Services
+
+Delete specific service:
 
 ```bash
 pm2 delete didyoudoityet-api
 ```
 
-View processes:
+or
+
+```bash
+pm2 delete didyoudoityet-htmx
+```
+
+## View Processes
 
 ```bash
 pm2 list
 ```
 
-View logs:
+## View Logs
+
+View specific service logs:
 
 ```bash
 pm2 logs didyoudoityet-api
 ```
 
-Save PM2 configuration:
+or
+
+```bash
+pm2 logs didyoudoityet-htmx
+```
+
+View all logs:
+
+```bash
+pm2 logs
+```
+
+## Save PM2 Configuration
 
 ```bash
 pm2 save
@@ -451,6 +575,7 @@ Automatically:
 * Runs `npm ci`
 * Builds the React frontend
 * Builds the Solid frontend
+* Builds the HTMX frontend
 
 ## Deploy to EC2
 
@@ -462,4 +587,5 @@ On successful workflows:
 * Build React
 * Copy React build to `/var/www/didyoudoityet/`
 * Build Solid
-* Restart the application with PM2
+* Build HTMX frontend
+* Start both backend and HTMX frontend with PM2

@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="stripe-publishable-key" content="">
+  <title>DidYouDoItYet?</title>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Content will be loaded here based on authentication state -->
+  </div>
+
+  <script>
+    // Global state
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalTasks = 0;
+    let currentFilter = 'all';
+    let editingTaskId = null;
+    let paymentStatus = {
+      paymentStatus: 'free',
+      tasksCreated: 0,
+      freeTasksRemaining: 3,
+      isPaywalled: false
+    };
+    let loginMode = 'login';
+    let stripe, elements, clientSecret;
+
+    // Check authentication status on load
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuth();
+      setupEventDelegation();
+    });
+
+    function setupEventDelegation() {
+      // Login form
+      document.addEventListener('submit', function(e) {
+        if (e.target && e.target.id === 'login-form') {
+          e.preventDefault();
+          handleLogin();
+        }
+      });
+
+      // Toggle login/register
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'toggle-btn') {
+          handleLoginToggle();
+        }
+      });
+
+      // Dashboard filter buttons
+      document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.filter-buttons button');
+        if (btn && btn.dataset.filter) {
+          console.log('Filter button clicked:', btn.dataset.filter);
+          setFilter(btn.dataset.filter);
+        }
+      });
+
+      // Pagination
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'prev-page') {
+          changePage(-1);
+        } else if (e.target && e.target.id === 'next-page') {
+          changePage(1);
+        }
+      });
+
+      // Task form
+      document.addEventListener('submit', function(e) {
+        if (e.target && e.target.id === 'task-form') {
+          e.preventDefault();
+          handleTaskSubmit();
+        }
+      });
+
+      // Cancel edit
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'cancel-btn') {
+          cancelEdit();
+        }
+      });
+
+      // Logout
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'logout-btn') {
+          handleLogout();
+        }
+      });
+
+      // File input change
+      document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'task-file') {
+          const file = e.target.files[0];
+          const fileInfo = document.getElementById('file-info');
+          if (file) {
+            fileInfo.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+          } else {
+            fileInfo.textContent = '';
+          }
+        }
+      });
+
+      // Payment form
+      document.addEventListener('submit', function(e) {
+        if (e.target && e.target.id === 'payment-form') {
+          e.preventDefault();
+          handlePaymentSubmit();
+        }
+      });
+
+      // Payment buttons
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'return-dashboard-btn') {
+          loadDashboardWithoutPaymentCheck();
+        } else if (e.target && e.target.id === 'retry-payment-btn') {
+          retryPayment();
+        } else if (e.target && e.target.id === 'cancel-payment-btn') {
+          checkAuth();
+        } else if (e.target && e.target.id === 'payment-logout-btn') {
+          handleLogout();
+        }
+      });
+
+      // Task actions (delegated)
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.textContent === 'Edit') {
+          const taskId = e.target.closest('li')?.querySelector('input[type="checkbox"]')?.dataset.taskId;
+          if (taskId) editTask(parseInt(taskId));
+        } else if (e.target && e.target.textContent === 'Delete') {
+          const taskId = e.target.closest('li')?.querySelector('input[type="checkbox"]')?.dataset.taskId;
+          if (taskId) deleteTask(parseInt(taskId));
+        }
+      });
+
+      // Task completion toggle
+      document.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('check')) {
+          const taskId = e.target.dataset.taskId;
+          if (taskId) toggleComplete(parseInt(taskId), e.target.checked);
+        }
+      });
+
+      // File upload for tasks
+      document.addEventListener('change', function(e) {
+        if (e.target && e.target.closest('.upload-section input[type="file"]')) {
+          const taskId = e.target.dataset.taskId;
+          if (taskId && e.target.files[0]) {
+            uploadFile(parseInt(taskId), e.target.files[0]);
+          }
+        }
+      });
+    }
+
+    function checkAuth() {
+      fetch('/api/auth/me', {
+        credentials: 'include'
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Not authenticated');
+        return res.json();
+      })
+      .then(data => {
+        loadDashboard(data);
+      })
+      .catch(() => {
+        loadLogin();
+      });
+    }
+
+    function loadLogin() {
+      fetch('/login')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+          loginMode = 'login';
+        });
+    }
+
+    function loadDashboard(user) {
+      fetch('/dashboard')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+          loadPaymentStatus();
+          loadTasks();
+        });
+    }
+
+    function loadDashboardWithoutPaymentCheck() {
+      fetch('/dashboard')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+          loadPaymentStatus();
+          loadTasks();
+          // Poll payment status until it shows as paid (webhook doesn't work on localhost)
+          pollPaymentStatusUntilPaid();
+        });
+    }
+
+    function pollPaymentStatusUntilPaid() {
+      let attempts = 0;
+      const maxAttempts = 30; // Poll for up to 30 seconds
+      
+      const poll = setInterval(() => {
+        attempts++;
+        fetch('/api/payment/status', {
+          credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log(`Payment status poll ${attempts}:`, data);
+          if (data.paymentStatus === 'paid') {
+            clearInterval(poll);
+            console.log('Payment status updated to paid');
+            loadPaymentStatus(); // Refresh UI with updated status
+          } else if (attempts >= maxAttempts) {
+            clearInterval(poll);
+            console.log('Payment status polling timed out - webhook may not be configured for localhost');
+            // Show message to user about webhook limitation
+            const paymentStatusDiv = document.getElementById('payment-status-display');
+            if (paymentStatusDiv) {
+              paymentStatusDiv.innerHTML = '<p style="color: orange;">Payment processing... (Stripe webhooks require deployed server)</p>';
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Payment status poll error:', err);
+        });
+      }, 1000); // Poll every second
+    }
+
+    function checkPaymentStatusAndLoadPayment() {
+      fetch('/api/payment/status', {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.isPaywalled) {
+          loadPayment();
+        }
+      })
+      .catch(() => {
+        // Stay on dashboard if payment check fails
+      });
+    }
+
+    function loadPaymentStatus() {
+      fetch('/api/payment/status', {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        paymentStatus = data;
+        updatePaymentUI();
+        // Load payment page if paywalled
+        if (data.isPaywalled) {
+          loadPayment();
+        }
+      })
+      .catch(() => {
+        // Keep default status on error
+      });
+    }
+
+    function updatePaymentUI() {
+      const statusBar = document.getElementById('payment-status-bar');
+      const paywallWarning = document.getElementById('paywall-warning');
+      const taskForm = document.getElementById('task-form');
+
+      if (!statusBar) return;
+
+      if (paymentStatus.paymentStatus === 'paid') {
+        statusBar.innerHTML = '<span class="payment-status-paid">✓ Premium Account - Unlimited Tasks</span>';
+        if (paywallWarning) paywallWarning.style.display = 'none';
+        if (taskForm) taskForm.style.display = 'flex';
+      } else {
+        statusBar.innerHTML = `<span class="payment-status-free">Free Tasks Remaining: ${paymentStatus.freeTasksRemaining} / 3</span>`;
+        
+        if (paymentStatus.isPaywalled) {
+          if (paywallWarning) paywallWarning.style.display = 'block';
+          if (!editingTaskId && taskForm) {
+            taskForm.style.display = 'none';
+          }
+        } else {
+          if (paywallWarning) paywallWarning.style.display = 'none';
+          if (taskForm) taskForm.style.display = 'flex';
+        }
+      }
+    }
+
+    function loadTasks() {
+      const container = document.getElementById('tasks-container');
+      if (!container) return;
+      
+      container.innerHTML = '<div>Loading...</div>';
+
+      fetch(`/api/tasks?page=${currentPage}&limit=50`, {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        let tasks = [];
+        if (Array.isArray(data)) {
+          tasks = data;
+        } else if (data?.tasks) {
+          tasks = data.tasks;
+          if (data.pagination) {
+            currentPage = data.pagination.page;
+            totalPages = data.pagination.totalPages;
+            totalTasks = data.pagination.total;
+          }
+        }
+
+        updatePagination();
+        renderTasks(tasks);
+        loadMediaFiles(tasks);
+      })
+      .catch(() => {
+        container.innerHTML = '<div class="error">Failed to load tasks</div>';
+      });
+    }
+
+    function loadMediaFiles(tasks) {
+      tasks.forEach(task => {
+        fetch(`/api/upload/${task.id}`, {
+          credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const mediaContainer = document.getElementById(`media-${task.id}`);
+            if (mediaContainer) {
+              renderMedia(mediaContainer, data.media, task.id);
+            }
+          }
+        })
+        .catch(() => {
+          // Ignore media load errors
+        });
+      });
+    }
+
+    function renderMedia(container, mediaList, taskId) {
+      if (!mediaList || mediaList.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = '<strong>Media:</strong><div style="display: flex; flex-wrap: wrap; gap: 5px;"></div>';
+      const wrapper = container.querySelector('div');
+
+      mediaList.forEach(media => {
+        const div = document.createElement('div');
+        div.style.position = 'relative';
+
+        if (media.file_type.startsWith('image/')) {
+          div.innerHTML = `<img class="media-image" src="/api/upload/file/${media.task_id}/${media.id}" alt="${media.filename}">`;
+        } else if (media.file_type.startsWith('video/')) {
+          div.innerHTML = `<video class="media-video" controls><source src="/api/upload/file/${media.task_id}/${media.id}" type="${media.file_type}">Your browser does not support the video tag.</video>`;
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;';
+        deleteBtn.onclick = () => deleteMedia(media.id, taskId);
+
+        div.appendChild(deleteBtn);
+        wrapper.appendChild(div);
+      });
+    }
+
+    function deleteMedia(mediaId, taskId) {
+      fetch(`/api/upload/${mediaId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          loadTasks();
+        } else {
+          const uploadError = document.getElementById('upload-error');
+          if (uploadError) uploadError.textContent = data.error || 'Delete failed';
+        }
+      })
+      .catch(() => {
+        const uploadError = document.getElementById('upload-error');
+        if (uploadError) uploadError.textContent = 'Delete failed. Please try again.';
+      });
+    }
+
+    function renderTasks(tasks) {
+      const container = document.getElementById('tasks-container');
+      if (!container) return;
+      
+      const filteredTasks = filterTasks(tasks);
+
+      if (filteredTasks.length === 0) {
+        container.innerHTML = '<div style="margin: 20px;">No tasks found</div>';
+        return;
+      }
+
+      container.innerHTML = '<ul></ul>';
+      const ul = container.querySelector('ul');
+
+      filteredTasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = 'dtask';
+
+        const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : '';
+
+        li.innerHTML = `
+          <input class="check" type="checkbox" data-task-id="${task.id}" ${task.completed ? 'checked' : ''}>
+          <span class="dcat-lab">Due: ${dueDate}</span><br>
+          <strong class="task" style="text-decoration: ${task.completed ? 'line-through' : 'none'}">Task: ${task.title}</strong><br>
+          ${task.description ? `<span class="desc">Description: ${task.description}<br></span>` : ''}
+          <div id="media-${task.id}" class="media-container" style="margin: 10px 0;"></div>
+          <div class="upload-section" style="margin: 10px 0;">
+            <input type="file" accept="image/*,video/*" data-task-id="${task.id}" style="margin: 5px 0;">
+          </div><br>
+          <span class="d-btn-span">
+            <button data-task-id="${task.id}">Edit</button>
+            <button data-task-id="${task.id}">Delete</button>
+          </span>
+        `;
+
+        ul.appendChild(li);
+      });
+    }
+
+    function filterTasks(tasks) {
+      const now = new Date();
+
+      return tasks.filter(task => {
+        switch (currentFilter) {
+          case 'completed':
+            return task.completed;
+          case 'dueSoon':
+            if (task.completed || !task.due_date) return false;
+            const dueDate = new Date(task.due_date);
+            const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
+            return hoursUntilDue <= 24 && hoursUntilDue > -24;
+          default:
+            return true;
+        }
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      // Update button states
+      document.querySelectorAll('.filter-buttons button').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === filter) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update title
+      const titles = {
+        all: 'All Tasks',
+        dueSoon: 'Due Soon',
+        completed: 'Completed'
+      };
+      const listTitle = document.getElementById('list-title');
+      if (listTitle) listTitle.textContent = titles[filter];
+
+      // Re-render tasks
+      loadTasks();
+    }
+
+    function updatePagination() {
+      const pageInfo = document.getElementById('page-info');
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+      
+      if (pageInfo) pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${totalTasks} total tasks)`;
+      if (prevBtn) prevBtn.disabled = currentPage <= 1;
+      if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      loadTasks();
+    }
+
+    function handleTaskSubmit() {
+      const title = document.getElementById('task-title').value;
+      const dueDate = document.getElementById('task-due-date').value;
+      const description = document.getElementById('task-description').value;
+      const fileInput = document.getElementById('task-file');
+      const errorDiv = document.getElementById('form-error');
+
+      console.log('handleTaskSubmit called, editingTaskId:', editingTaskId);
+      console.log('Title:', title, 'Due date:', dueDate, 'Description:', description);
+
+      errorDiv.textContent = '';
+
+      const method = editingTaskId ? 'PUT' : 'POST';
+      const url = editingTaskId ? `/api/tasks/${editingTaskId}` : '/api/tasks';
+
+      console.log('Method:', method, 'URL:', url);
+
+      const requestBody = editingTaskId 
+        ? { title, due_date: dueDate, description }
+        : { title, due_date: dueDate, description };
+
+      console.log('Request body:', requestBody);
+
+      fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      })
+      .then(res => {
+        console.log('Response status:', res.status);
+        if (!res.ok) throw new Error('Failed to save task');
+        return res.json();
+      })
+      .then(data => {
+        console.log('Response data:', data);
+        const taskId = editingTaskId || data.id;
+
+        // Upload file if provided (only for new tasks)
+        if (!editingTaskId && fileInput.files[0]) {
+          uploadFile(taskId, fileInput.files[0]).then(() => {
+            resetForm();
+            loadTasks();
+            loadPaymentStatus();
+          }).catch(err => {
+            errorDiv.textContent = 'File upload failed: ' + err;
+            resetForm();
+            loadTasks();
+            loadPaymentStatus();
+          });
+        } else {
+          resetForm();
+          loadTasks();
+          loadPaymentStatus();
+        }
+      })
+      .catch(err => {
+        console.log('Task submission error:', err);
+        errorDiv.textContent = err.message;
+      });
+    }
+
+    function uploadFile(taskId, file) {
+      if (!file) return Promise.resolve();
+
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('task_id', taskId);
+
+        fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const uploadError = document.getElementById('upload-error');
+            if (uploadError) uploadError.textContent = '';
+            resolve();
+          } else {
+            const uploadError = document.getElementById('upload-error');
+            if (uploadError) uploadError.textContent = data.error || 'Upload failed';
+            reject(data.error);
+          }
+        })
+        .catch(() => {
+          const uploadError = document.getElementById('upload-error');
+          if (uploadError) uploadError.textContent = 'Upload failed. Please try again.';
+          reject('Upload failed');
+        });
+      });
+    }
+
+    function editTask(taskId) {
+      fetch(`/api/tasks?page=${currentPage}&limit=50`, {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => {
+        let tasks = Array.isArray(data) ? data : (data?.tasks || []);
+        const task = tasks.find(t => t.id === taskId);
+        
+        if (task) {
+          editingTaskId = taskId;
+          const formTitle = document.getElementById('form-title');
+          const taskTitle = document.getElementById('task-title');
+          const taskDueDate = document.getElementById('task-due-date');
+          const taskDescription = document.getElementById('task-description');
+          const submitBtn = document.getElementById('submit-btn');
+          const cancelBtn = document.getElementById('cancel-btn');
+          const fileUploadSection = document.querySelector('.file-upload-section');
+          const taskForm = document.getElementById('task-form');
+          
+          if (formTitle) formTitle.textContent = 'Edit Task';
+          if (taskTitle) taskTitle.value = task.title;
+          if (taskDueDate) taskDueDate.value = task.due_date ? task.due_date.slice(0, 10) : '';
+          if (taskDescription) taskDescription.value = task.description || '';
+          if (submitBtn) submitBtn.textContent = 'Update';
+          if (cancelBtn) cancelBtn.style.display = 'inline-block';
+          
+          if (fileUploadSection) fileUploadSection.style.display = 'none';
+          
+          if (taskForm) taskForm.style.display = 'flex';
+        }
+      });
+    }
+
+    function cancelEdit() {
+      resetForm();
+    }
+
+    function resetForm() {
+      editingTaskId = null;
+      const formTitle = document.getElementById('form-title');
+      const taskTitle = document.getElementById('task-title');
+      const taskDueDate = document.getElementById('task-due-date');
+      const taskDescription = document.getElementById('task-description');
+      const taskFile = document.getElementById('task-file');
+      const fileInfo = document.getElementById('file-info');
+      const submitBtn = document.getElementById('submit-btn');
+      const cancelBtn = document.getElementById('cancel-btn');
+      const fileUploadSection = document.querySelector('.file-upload-section');
+      const formError = document.getElementById('form-error');
+      
+      if (formTitle) formTitle.textContent = 'Add New Task';
+      if (taskTitle) taskTitle.value = '';
+      if (taskDueDate) taskDueDate.value = '';
+      if (taskDescription) taskDescription.value = '';
+      if (taskFile) taskFile.value = '';
+      if (fileInfo) fileInfo.textContent = '';
+      if (submitBtn) submitBtn.textContent = 'Add Task';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      if (fileUploadSection) fileUploadSection.style.display = 'block';
+      if (formError) formError.textContent = '';
+      
+      updatePaymentUI();
+    }
+
+    function toggleComplete(taskId, completed) {
+      fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ completed })
+      })
+      .then(() => {
+        loadTasks();
+      })
+      .catch(() => {
+        loadTasks();
+      });
+    }
+
+    function deleteTask(taskId) {
+      if (!confirm('Delete this task?')) return;
+
+      fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      .then(() => {
+        loadTasks();
+        loadPaymentStatus();
+      })
+      .catch(() => {
+        const formError = document.getElementById('form-error');
+        if (formError) formError.textContent = 'Failed to delete task';
+      });
+    }
+
+    function handleLoginToggle() {
+      loginMode = loginMode === 'login' ? 'register' : 'login';
+      const formTitle = document.getElementById('form-title');
+      const submitBtn = document.getElementById('submit-btn');
+      const toggleBtn = document.getElementById('toggle-btn');
+      
+      if (formTitle) formTitle.textContent = loginMode === 'login' ? 'Login' : 'Register';
+      if (submitBtn) submitBtn.textContent = loginMode === 'login' ? 'Login' : 'Register';
+      if (toggleBtn) toggleBtn.textContent = loginMode === 'login' 
+        ? 'Not a member? Register' 
+        : 'Already have an account? Login';
+    }
+
+    function handleLogin() {
+      console.log('handleLogin called, mode:', loginMode);
+      const email = document.getElementById('e-input').value;
+      const password = document.getElementById('p-input').value;
+      const errorDiv = document.getElementById('login-error');
+      const submitBtn = document.getElementById('submit-btn');
+      
+      console.log('Email:', email, 'Password length:', password ? password.length : 0);
+      
+      if (errorDiv) errorDiv.textContent = '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Please wait...';
+      }
+
+      fetch(`/api/auth/${loginMode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      })
+      .then(res => {
+        console.log('Response status:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('Response data:', data);
+        if (data.error) {
+          console.log('Error in response:', data.error);
+          if (errorDiv) errorDiv.textContent = data.error;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = loginMode === 'login' ? 'Login' : 'Register';
+          }
+        } else {
+          console.log('Success, loading dashboard with data:', data);
+          // Use the returned user data directly instead of making another auth check
+          loadDashboard(data);
+        }
+      })
+      .catch(err => {
+        console.log('Fetch error:', err);
+        if (errorDiv) errorDiv.textContent = 'Authentication failed';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = loginMode === 'login' ? 'Login' : 'Register';
+        }
+      });
+    }
+
+    function handleLogout() {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      .then(() => {
+        loadLogin();
+      });
+    }
+
+    function loadPayment() {
+      fetch('/payment')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('app').innerHTML = html;
+          initStripe();
+        });
+    }
+
+    function initStripe() {
+      console.log('Initializing Stripe...');
+      const stripeKey = document.querySelector('meta[name="stripe-publishable-key"]')?.content || 'pk_test_YOUR_STRIPE_KEY';
+      console.log('Stripe key:', stripeKey);
+      
+      fetch('/api/payment/create-pay-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ amount: 1 })
+      })
+      .then(res => {
+        console.log('Payment intent response status:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('Payment intent data:', data);
+        if (data.clientSecret) {
+          stripe = Stripe(stripeKey);
+          clientSecret = data.clientSecret;
+          
+          // Use the same configuration as React version
+          elements = stripe.elements({
+            clientSecret: clientSecret,
+            appearance: { theme: 'stripe' }
+          });
+
+          const paymentElement = elements.create('payment');
+          
+          console.log('Mounting payment element to #payment-element');
+          paymentElement.mount('#payment-element');
+
+          const paymentLoading = document.getElementById('payment-loading');
+          const paymentContent = document.getElementById('payment-content');
+          
+          if (paymentLoading) paymentLoading.style.display = 'none';
+          if (paymentContent) paymentContent.style.display = 'block';
+        } else {
+          console.log('No client secret in response');
+          const paymentLoading = document.getElementById('payment-loading');
+          if (paymentLoading) paymentLoading.textContent = data.error || 'Failed to initialize payment';
+        }
+      })
+      .catch(err => {
+        console.log('Stripe initialization error:', err);
+        const paymentLoading = document.getElementById('payment-loading');
+        if (paymentLoading) paymentLoading.textContent = 'Failed to initialize payment';
+      });
+    }
+
+    function handlePaymentSubmit() {
+      if (!stripe || !elements) return;
+
+      const submitBtn = document.getElementById('submit-btn');
+      const messageDiv = document.getElementById('payment-message');
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+      }
+      if (messageDiv) messageDiv.textContent = '';
+
+      stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin,
+        },
+        redirect: 'if_required',
+      }).then(({ error }) => {
+        if (error) {
+          if (messageDiv) messageDiv.textContent = error.message || 'Payment failed. Please try again.';
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pay $1.00';
+          }
+          
+          const paymentForm = document.getElementById('payment-form');
+          const paymentFailure = document.getElementById('payment-failure');
+          const failureMessage = document.getElementById('failure-message');
+          
+          if (paymentForm) paymentForm.style.display = 'none';
+          if (paymentFailure) paymentFailure.style.display = 'block';
+          if (failureMessage) failureMessage.textContent = error.message || 'Payment failed. Please try again.';
+        } else {
+          const paymentForm = document.getElementById('payment-form');
+          const paymentSuccess = document.getElementById('payment-success');
+          
+          if (paymentForm) paymentForm.style.display = 'none';
+          if (paymentSuccess) paymentSuccess.style.display = 'block';
+        }
+      });
+    }
+
+    function retryPayment() {
+      const paymentFailure = document.getElementById('payment-failure');
+      const paymentForm = document.getElementById('payment-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const messageDiv = document.getElementById('payment-message');
+      
+      if (paymentFailure) paymentFailure.style.display = 'none';
+      if (paymentForm) paymentForm.style.display = 'block';
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Pay $1.00';
+      }
+      if (messageDiv) messageDiv.textContent = '';
+    }
+  </script>
+</body>
+</html>

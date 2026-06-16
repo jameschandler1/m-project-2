@@ -1,0 +1,386 @@
+/**
+ * Global Stylesheet
+ * 
+ * This file contains global styles and component-specific
+ * CSS rules for the Task Tracking application.
+ * It defines typography, layout, and component styling.
+ */
+
+/* Global body styles */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* ===================================================== */
+/* Dashboard Component Styles */
+/* ===================================================== */
+
+.dtitle {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+.dlog-btn {
+  margin-top: 20px;
+  margin-left: 20px;
+}
+
+.dtl-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+.dtask {
+  text-align: left;
+  margin: 20px;
+}
+
+.dform {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+}
+
+.dnt-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+.d-btn-span {
+  display: flex;
+  gap: 4px;
+  margin-left: 20px;
+}
+
+.desc {
+  padding: 20px;
+}
+
+.dcat-lab {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+  padding-left: 20px;
+}
+
+.filter-buttons button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.filter-buttons button:hover {
+  background: #e9ecef;
+}
+
+.filter-buttons button.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.check {
+  margin-right: 4px;
+}
+
+.la-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+  font-style: italic;
+}
+
+.lf-title {
+  text-align: left;
+  margin-top: 20px;
+  padding-left: 20px;
+}
+
+form {
+  margin-top: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* ===================================================== */
+/* Media Component Styles */
+/* ===================================================== */
+
+.media-image {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 5px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.media-video {
+  max-width: 200px;
+  max-height: 200px;
+  margin: 5px;
+  border-radius: 4px;
+}
+
+/* ===================================================== */
+/* Login Component Styles */
+/* ===================================================== */
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+}
+
+#e-input {
+  margin: 0 5px 0 0px;
+}
+
+#p-input {
+  margin: 0 5px 0px 0px;
+}
+
+.reg-btn {
+  display: flex;
+  margin-top: 5px;
+  margin-left: 20px;
+}
+
+/* ===================================================== */
+/* Payment Component Styles */
+/* ===================================================== */
+
+.payment-container {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.payment-header {
+  color: #282c34;
+  margin-bottom: 10px;
+}
+
+.payment-description {
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.payment-form {
+  margin-bottom: 20px;
+}
+
+.payment-title {
+  color: #282c34;
+  margin-bottom: 10px;
+}
+
+.payment-subtitle {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.payment-element {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.payment-error {
+  color: #dc3545;
+  margin: 15px 0;
+  padding: 10px;
+  background: #f8d7da;
+  border-radius: 4px;
+}
+
+.payment-success {
+  color: #28a745;
+  margin: 15px 0;
+  padding: 10px;
+  background: #d4edda;
+  border-radius: 4px;
+}
+
+.payment-status-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.payment-status-message h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.payment-status-message p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.payment-status-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.payment-status-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-status-actions .payment-submit-button,
+.payment-status-actions .payment-logout-button {
+  flex: 1;
+  width: auto;
+}
+
+.payment-submit-button {
+  width: 100%;
+  padding: 12px;
+  background: #282c34;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.payment-submit-button:hover:not(:disabled) {
+  background: #3a404d;
+}
+
+.payment-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.payment-logout-button {
+  width: 100%;
+  padding: 12px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 15px;
+  transition: background 0.3s;
+}
+
+.payment-logout-button:hover {
+  background: #5a6268;
+}
+
+.payment-loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+/* Payment Status Bar Styles */
+.payment-status-bar {
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.payment-status-paid {
+  color: #28a745;
+  background: #d4edda;
+  padding: 10px 15px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.payment-status-free {
+  color: #007bff;
+  background: #cce5ff;
+  padding: 10px 15px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.paywall-warning {
+  background: #fff3cd;
+  color: #856404;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  border-left: 4px solid #ffc107;
+}
+
+.paywall-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 4px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.error {
+  color: red;
+  margin: 10px 20px;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+.pagination-controls button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background: #e9ecef;
+}

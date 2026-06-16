@@ -1,0 +1,50 @@
+<div class="payment-container">
+  <h2 class="payment-header">Upgrade Your Account</h2>
+  <p class="payment-description">
+    You've reached your free task limit. Upgrade to continue creating unlimited tasks.
+  </p>
+
+  <div id="payment-loading" class="payment-loading">Loading payment form...</div>
+  
+  <div id="payment-content" style="display: none;">
+    <form id="payment-form" class="payment-form">
+      <h3 class="payment-title">Complete Your Payment</h3>
+      <p class="payment-subtitle">Upgrade to continue creating unlimited tasks</p>
+      
+      <div id="payment-element" class="payment-element"></div>
+      
+      <div id="payment-message" class="payment-error"></div>
+      
+      <button type="submit" id="submit-btn" class="payment-submit-button">Pay $1.00</button>
+    </form>
+    
+    <div id="payment-success" style="display: none;">
+      <div class="payment-status-message payment-success">
+        <div class="payment-status-icon">✅</div>
+        <div>
+          <h3>Payment successful</h3>
+          <p>Your payment was processed. You can now close this message and return to the dashboard.</p>
+        </div>
+      </div>
+      <div class="payment-status-actions">
+        <button type="button" class="payment-submit-button" id="return-dashboard-btn">Return to Dashboard</button>
+      </div>
+    </div>
+    
+    <div id="payment-failure" style="display: none;">
+      <div class="payment-status-message payment-error">
+        <div class="payment-status-icon">❌</div>
+        <div>
+          <h3 id="failure-title">Payment failed</h3>
+          <p id="failure-message">Payment failed. Please try again.</p>
+        </div>
+      </div>
+      <div class="payment-status-actions">
+        <button type="button" class="payment-submit-button" id="retry-payment-btn">Retry Payment</button>
+        <button type="button" class="payment-logout-button" id="cancel-payment-btn">Cancel Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="payment-logout-btn" class="payment-logout-button">Logout</button>
+</div>
