@@ -2,7 +2,7 @@
   <h2 class="la-title">DID YOU DO IT YET?</h2>
   <h4 class="lf-title" id="form-title">Login</h4>
   
-  <form class="log-form" onsubmit="event.preventDefault(); handleAuth();">
+  <form class="log-form" id="login-form">
     <input
       id="e-input"
       type="email"
@@ -24,50 +24,3 @@
   
   <div id="login-error" class="error"></div>
 </div>
-
-<script>
-  let mode = 'login';
-
-  document.getElementById('toggle-btn').addEventListener('click', function() {
-    mode = mode === 'login' ? 'register' : 'login';
-    document.getElementById('form-title').textContent = mode === 'login' ? 'Login' : 'Register';
-    document.getElementById('submit-btn').textContent = mode === 'login' ? 'Login' : 'Register';
-    document.getElementById('toggle-btn').textContent = mode === 'login' 
-      ? 'Not a member? Register' 
-      : 'Already have an account? Login';
-  });
-
-  function handleAuth() {
-    const email = document.getElementById('e-input').value;
-    const password = document.getElementById('p-input').value;
-    const errorDiv = document.getElementById('login-error');
-    const submitBtn = document.getElementById('submit-btn');
-    
-    errorDiv.textContent = '';
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Please wait...';
-
-    fetch(`/api/auth/${mode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        errorDiv.textContent = data.error;
-        submitBtn.disabled = false;
-        submitBtn.textContent = mode === 'login' ? 'Login' : 'Register';
-      } else {
-        // Success - reload the app
-        checkAuth();
-      }
-    })
-    .catch(err => {
-      errorDiv.textContent = 'Authentication failed';
-      submitBtn.disabled = false;
-      submitBtn.textContent = mode === 'login' ? 'Login' : 'Register';
-    });
-  }
-</script>
